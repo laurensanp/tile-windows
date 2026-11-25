@@ -1,2 +1,5 @@
 # Your personal settings (created from settings.default.json, also updated automatically with new apps)
 settings.json
+
+# Hotkey helper, built by Setup.ps1 from Hotkeys.cs
+TileWindowsHotkeys.exe

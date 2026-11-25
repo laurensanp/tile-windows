@@ -1,8 +1,8 @@
 {
     "_help": {
         "New": "Filled in automatically: open apps that have no weight yet. Move each name into a group under Weights.",
-        "Hotkey": "Shortcut that arranges the windows. Run Setup.ps1 again after changing it.",
-        "RestoreHotkey": "Shortcut that maximizes all apps again. Run Setup.ps1 again after changing it.",
+        "Hotkey": "Shortcut that arranges the windows. After changing it, run the install command again and choose Update.",
+        "RestoreHotkey": "Shortcut that maximizes all apps again. After changing it, run the install command again and choose Update.",
         "Gap": "Space in px between windows and to the screen edge (at 100% display scaling; scaled automatically).",
         "MinWidth": "Narrowest allowed window in px (at 100% scaling). If apps don't fit, the least important one is minimized.",
         "MinHeight": "Lowest allowed window in px (at 100% scaling). Same rule as MinWidth.",
@@ -16,8 +16,8 @@
         "GameFolders": "Anything started from these folders counts as a game and is never touched. Write backslashes twice."
     },
     "New": [],
-    "Hotkey": "CTRL+ALT+W",
-    "RestoreHotkey": "CTRL+ALT+R",
+    "Hotkey": "CTRL+ALT+SHIFT+W",
+    "RestoreHotkey": "CTRL+ALT+SHIFT+R",
     "Gap": 12,
     "MinWidth": 500,
     "MinHeight": 300,

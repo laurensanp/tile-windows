@@ -19,7 +19,7 @@ function Install-TileWindows {
     } finally { Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue }
     & $ps -NoProfile -ExecutionPolicy Bypass -File "$dir\Setup.ps1" | Out-Null
     if ($LASTEXITCODE) { throw "Setup failed (exit code $LASTEXITCODE)" }
-    Write-Host "Tile Windows is ready: Ctrl+Alt+W arranges your windows, Ctrl+Alt+R maximizes them again."
+    Write-Host "Tile Windows is ready: Ctrl+Alt+Shift+W arranges your windows, Ctrl+Alt+Shift+R maximizes them again."
     Write-Host 'Run the same command again to update, change settings or uninstall.'
 }
 
@@ -32,7 +32,7 @@ switch (Read-Host 'Choose') {
     '2' {
         $file = "$dir\settings.json"
         try { Start-Process $file } catch { Start-Process notepad.exe $file }   # no app for .json: Notepad
-        Write-Host 'Changes apply on the next Ctrl+Alt+W. Changed a hotkey? Run the command again and choose Update.'
+        Write-Host 'Changes apply on the next Ctrl+Alt+Shift+W. Changed a hotkey? Run the command again and choose Update.'
     }
     '3' {
         & $ps -NoProfile -ExecutionPolicy Bypass -File "$dir\Setup.ps1" -Uninstall | Out-Null
