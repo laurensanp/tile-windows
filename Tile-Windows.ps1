@@ -1,10 +1,11 @@
-# Tiles every open app window across all monitors, weighted by how much you use each app (see settings.json).
+﻿# Tiles every open app window across all monitors, weighted by how much you use each app (see settings.json).
 # Runs on demand from the Start-menu shortcut (Setup.ps1 creates it with the hotkey).
 . "$PSScriptRoot\Layout.ps1"
 $settingsFile = Get-SettingsFile $PSScriptRoot
 $cfg = Read-TileSettings $settingsFile
 if (-not ('Tiler' -as [type])) { Add-Type -Path "$PSScriptRoot\Native.cs" }
 
+try { [Threading.EventWaitHandle]::OpenExisting('TileWindowsTiled').Set() } catch { }   # ends the sign-in default sizing (Restore-Windows.ps1 -Startup)
 [Tiler]::MakeDpiAware()                    # real pixels on every monitor, also with mixed display scaling
 $focus = [Tiler]::GetForegroundWindow()   # the window (or game) you were in keeps focus
 Add-Type -AssemblyName System.Windows.Forms

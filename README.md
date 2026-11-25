@@ -1,6 +1,6 @@
 # Tile Windows
 
-Arranges all your open app windows across all monitors with one hotkey, sized by how much you use each app. Press **Ctrl+Alt+W** to arrange, **Ctrl+Alt+R** to maximize everything again. Only a tiny hotkey helper (about 5 MB) runs in the background; it does nothing until you press a hotkey.
+Arranges all your open app windows across all monitors with one hotkey, sized by how much you use each app. Press **Ctrl+Alt+W** to arrange, **Ctrl+Alt+R** to maximize everything again. Only a tiny hotkey helper (about 5 MB) runs in the background; after you sign in, apps open at a normal default size (centered, not tiled) until you press Ctrl+Alt+W; otherwise it does nothing until you press a hotkey.
 
 - **Main monitor** gets only the apps you work in directly (editor, browser…). Chat, music and tools go to the other monitors.
 - **Best fit, not a fixed grid:** each monitor gets the mix of side-by-side columns and stacked rows that gives important apps the most room while every window stays readable.

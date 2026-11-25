@@ -1,5 +1,6 @@
 // Tiny hotkey helper. Setup compiles it to TileWindowsHotkeys.exe and starts it with Windows.
 // Usage: TileWindowsHotkeys.exe "CTRL+ALT+W" "C:\...\Tile-Windows.ps1" "CTRL+ALT+R" "C:\...\Restore-Windows.ps1"
+// A pair "START" "C:\...\Restore-Windows.ps1" runs that script once with -Startup when the helper starts (at sign-in).
 // Each pressed hotkey runs its script in a hidden PowerShell. Nothing else happens in the background.
 // (Shortcut-file hotkeys are not used: Explorer often stops reacting to them after the shortcut changes.)
 using System; using System.Diagnostics; using System.Runtime.InteropServices; using System.Threading;
@@ -30,6 +31,7 @@ static class Hotkeys {
         string problems = "";
         for (int i = 0; i + 1 < args.Length; i += 2) {
             uint mods, vk;
+            if (args[i] == "START") { Run(ps, args[i + 1], " -Startup"); continue; }
             if (!Parse(args[i], out mods, out vk)) problems += "Can't read the hotkey \"" + args[i] + "\" (use e.g. CTRL+ALT+W).\n";
             else if (!RegisterHotKey(IntPtr.Zero, i / 2 + 1, mods, vk)) problems += args[i] + " is already used by another program.\n";
         }
@@ -42,10 +44,14 @@ static class Hotkeys {
             if (msg.message != 0x0312) continue; // WM_HOTKEY
             int idx = (msg.wParam.ToInt32() - 1) * 2 + 1;
             if (idx < 1 || idx >= args.Length) continue;
-            var start = new ProcessStartInfo(ps, "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"" + args[idx] + "\"");
-            start.UseShellExecute = false; start.CreateNoWindow = true;
-            try { Process.Start(start); } catch { }
+            Run(ps, args[idx], "");
         }
         GC.KeepAlive(single);
+    }
+
+    static void Run(string ps, string script, string extra) {
+        var start = new ProcessStartInfo(ps, "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"" + script + "\"" + extra);
+        start.UseShellExecute = false; start.CreateNoWindow = true;
+        try { Process.Start(start); } catch { }
     }
 }

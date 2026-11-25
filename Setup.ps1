@@ -38,7 +38,7 @@ function New-Shortcut($path, $target, $arguments, $icon) {
 New-Shortcut "$menu\Tile Windows.lnk" $ps "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$tile`"" 174
 New-Shortcut "$menu\Restore Windows.lnk" $ps "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$restore`"" 15
 $helperArgs = "`"$($cfg.Hotkey)`" `"$tile`" `"$($cfg.RestoreHotkey)`" `"$restore`""
-New-Shortcut "$startup\Tile Windows Hotkeys.lnk" $exe $helperArgs 174
+New-Shortcut "$startup\Tile Windows Hotkeys.lnk" $exe "$helperArgs `"START`" `"$restore`"" 174   # at sign-in also maximizes apps that reopen in their old tile
 Start-Process $exe $helperArgs
 
 "Hotkeys ready: $($cfg.Hotkey) arranges, $($cfg.RestoreHotkey) maximizes again."
