@@ -75,6 +75,16 @@ public static class Tiler {
 
     public static void Minimize(IntPtr h) { ShowWindow(h, 7); } // SW_SHOWMINNOACTIVE: minimize without focusing another window
 
+    // Sets where a minimized window comes back to (normal, not maximized) and leaves it minimized.
+    [StructLayout(LayoutKind.Sequential)] struct WINDOWPLACEMENT { public int length, flags, showCmd, minX, minY, maxX, maxY; public RECT normal; }
+    [DllImport("user32.dll")] static extern bool GetWindowPlacement(IntPtr h, ref WINDOWPLACEMENT p);
+    [DllImport("user32.dll")] static extern bool SetWindowPlacement(IntPtr h, ref WINDOWPLACEMENT p);
+    public static void SetRestoreRect(IntPtr h, int x, int y, int w, int hh) {
+        var p = new WINDOWPLACEMENT(); p.length = Marshal.SizeOf(p); GetWindowPlacement(h, ref p);
+        p.flags = 0; p.showCmd = 7; p.normal.L = x; p.normal.T = y; p.normal.R = x + w; p.normal.B = y + hh;
+        SetWindowPlacement(h, ref p);
+    }
+
     // Gives focus back to h if something else took it. SW_SHOW activates without changing size (SetForegroundWindow
     // alone is often refused for background processes).
     public static void Refocus(IntPtr h) {

@@ -40,6 +40,7 @@ Run the install command and choose **Settings**, or edit `settings.json` directl
 | `Weights` | Process names (Task Manager → Details, without `.exe`) grouped by how much you use them. |
 | `WideApps` | Apps that need width (videos, websites). They get wide slots (~1280 px) instead of narrow columns when possible. |
 | `MainScreenApps` | Apps that get the whole main monitor to themselves when open; everything else moves to the other monitors. Optional. |
+| `AtSignIn` | After you sign in, apps open at a plain default size until you press the tile hotkey. `Maximized` apps open maximized instead, `Minimized` apps stay minimized. Optional. |
 | `GameFolders` | Anything started from these folders counts as a game and is never touched. |
 
 ### Weights
