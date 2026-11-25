@@ -1,0 +1,62 @@
+{
+    "_help": {
+        "New": "Filled in automatically: open apps that have no weight yet. Move each name into a group under Weights.",
+        "Hotkey": "Shortcut that arranges the windows. Run Setup.ps1 again after changing it.",
+        "RestoreHotkey": "Shortcut that maximizes all apps again. Run Setup.ps1 again after changing it.",
+        "Gap": "Space in px between windows and to the screen edge (at 100% display scaling; scaled automatically).",
+        "MinWidth": "Narrowest allowed window in px (at 100% scaling). If apps don't fit, the least important one is minimized.",
+        "MinHeight": "Lowest allowed window in px (at 100% scaling). Same rule as MinWidth.",
+        "Layout": "Each monitor gets the best mix of columns (side by side) and rows (stacked): important apps get more space, every window stays readable. What doesn't fit readably is minimized.",
+        "Weights": "Process names (Task Manager > Details, without .exe) grouped by how much you use them. Higher = more space and minimized later. Equal weight: the app you used last stays.",
+        "Weights 3 and up": "You work in it directly: main monitor.",
+        "Weights below 3": "Second monitor (or main monitor if you only have one). Apps not listed count as 1.",
+        "Weights 0": "Never touch: games, overlays.",
+        "Weights any number": "Any number works as a group, e.g. \"4.5\": [...] to rank apps between 4 and 5.",
+        "WideApps": "Apps that need width (videos, websites): they get wide slots (about 1280 px) instead of narrow columns when possible.",
+        "GameFolders": "Anything started from these folders counts as a game and is never touched. Write backslashes twice."
+    },
+    "New": [],
+    "Hotkey": "CTRL+ALT+W",
+    "RestoreHotkey": "CTRL+ALT+R",
+    "Gap": 12,
+    "MinWidth": 500,
+    "MinHeight": 300,
+    "Weights": {
+        "5": [
+            "Code", "Cursor", "devenv", "idea64", "pycharm64", "sublime_text", "notepad++",
+            "brave", "chrome", "msedge", "firefox", "opera", "vivaldi"
+        ],
+        "4": [
+            "claude", "ChatGPT", "Obsidian", "Notion", "Figma", "WINWORD", "EXCEL", "POWERPNT", "ONENOTE"
+        ],
+        "3": [
+            "MSACCESS", "Acrobat", "AcroRd32"
+        ],
+        "2.5": [
+            "Discord", "slack", "ms-teams", "Teams", "Zoom"
+        ],
+        "2": [
+            "Spotify", "WhatsApp", "WhatsApp.Root", "Telegram", "Signal", "OUTLOOK", "olk", "thunderbird",
+            "WindowsTerminal", "powershell", "pwsh", "cmd", "Notepad",
+            "obs64", "vlc"
+        ],
+        "1.5": [
+            "explorer", "ApplicationFrameHost", "SystemSettings", "Taskmgr"
+        ],
+        "1": [
+            "steamwebhelper", "Steam", "EpicGamesLauncher", "RiotClientServices", "Battle.net", "EADesktop", "upc", "GalaxyClient",
+            "NVIDIA App", "RadeonSoftware"
+        ],
+        "0": [
+            "javaw", "RobloxPlayerBeta", "Minecraft.Windows",
+            "NVIDIA Overlay", "GameBar", "LiveCaptions", "osk", "magnify"
+        ]
+    },
+    "WideApps": [
+        "brave", "chrome", "msedge", "firefox", "opera", "vivaldi", "vlc"
+    ],
+    "GameFolders": [
+        "\\steamapps\\", "\\Epic Games\\", "\\Riot Games\\", "\\XboxGames\\", "\\WindowsApps\\Microsoft.MinecraftUWP",
+        "\\Rockstar Games\\", "\\EA Games\\", "\\Ubisoft Game Launcher\\games\\", "\\GOG Galaxy\\Games\\", "\\FiveM"
+    ]
+}
