@@ -16,7 +16,7 @@ $z = 0; $unknown = New-Object System.Collections.ArrayList
 $items = @([Tiler]::AppWindows([uint32]$PID) | ForEach-Object { $app = Get-AppInfo $_ $cfg
     if ($app.Name -and -not $app.Known) { [void]$unknown.Add($app.Name) }
     $comfort = if (@($cfg.WideApps) -contains $app.Name) { 1280 } else { 800 }   # wide apps (videos, websites) prefer wide slots
-    if ($app.W -gt 0) { [pscustomobject]@{ H = $_; W = $app.W; Z = $z; MinW = 0; MinH = 0; ComfortW = $comfort } }; $z++ })
+    if ($app.W -gt 0) { [pscustomobject]@{ H = $_; W = $app.W; Z = $z; Solo = @($cfg.MainScreenApps) -contains $app.Name; MinW = 0; MinH = 0; ComfortW = $comfort } }; $z++ })
 
 # Reminder: open apps without a weight go into "New" in settings.json and a notification asks you to sort them.
 $pending = @(@($cfg.New) + @($unknown) | Where-Object { $_ -and -not $cfg.Weights.ContainsKey($_) } | Sort-Object -Unique)

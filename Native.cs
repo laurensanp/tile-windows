@@ -64,6 +64,7 @@ public static class Tiler {
     public static bool Place(IntPtr h, int x, int y, int w, int hh) {
         if (IsIconic(h) || IsZoomed(h)) ShowWindow(h, 4); // SW_SHOWNOACTIVATE: back to normal size without focusing it
         SetWindowPos(h, IntPtr.Zero, x, y, w, hh, 0x54);   // SWP_NOZORDER | SWP_NOACTIVATE | SWP_SHOWWINDOW
+        if (IsZoomed(h)) { ShowWindow(h, 4); SetWindowPos(h, IntPtr.Zero, x, y, w, hh, 0x54); } // some apps (e.g. FilmCraft) stay flagged maximized: broken title bar
         RECT win, vis; GetWindowRect(h, out win);
         if (DwmGetWindowAttribute(h, 9, out vis, 16) != 0) return true;
         int l = vis.L - win.L, t = vis.T - win.T, r = win.R - vis.R, b = win.B - vis.B;

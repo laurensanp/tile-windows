@@ -13,6 +13,7 @@
         "Weights 0": "Never touch: games, overlays.",
         "Weights any number": "Any number works as a group, e.g. \"4.5\": [...] to rank apps between 4 and 5.",
         "WideApps": "Apps that need width (videos, websites): they get wide slots (about 1280 px) instead of narrow columns when possible.",
+        "MainScreenApps": "Apps that get the whole main monitor to themselves when open (still tiled, not maximized); everything else moves to the other monitors. Optional.",
         "GameFolders": "Anything started from these folders counts as a game and is never touched. Write backslashes twice."
     },
     "New": [],
@@ -55,6 +56,7 @@
     "WideApps": [
         "brave", "chrome", "msedge", "firefox", "opera", "vivaldi", "vlc"
     ],
+    "MainScreenApps": [],
     "GameFolders": [
         "\\steamapps\\", "\\Epic Games\\", "\\Riot Games\\", "\\XboxGames\\", "\\WindowsApps\\Microsoft.MinecraftUWP",
         "\\Rockstar Games\\", "\\EA Games\\", "\\Ubisoft Game Launcher\\games\\", "\\GOG Galaxy\\Games\\", "\\FiveM"

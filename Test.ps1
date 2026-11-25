@@ -37,6 +37,8 @@ $L = Get-L @(3, 2) @() @(800, 800) $true; if ($L.Count -ne 2 -or $L.Slots[0][0] 
 $it = @(3, 3, 2, 1, 1) | ForEach-Object { [pscustomobject]@{ W = $_ } }
 $g = Get-MonitorGroups $it 2; if ($g[0].Count -ne 2 -or $g[1].Count -ne 3) { throw "main monitor should get only weight-3 apps" }
 $g = Get-MonitorGroups @($it[3], $it[4]) 2; if ($g[0].Count -ne 1) { throw "main monitor should get the top app when none is weight 3" }
+$solo = @($it) + [pscustomobject]@{ W = 2; Solo = $true }
+$g = Get-MonitorGroups $solo 2; if ($g[0].Count -ne 1 -or -not $g[0][0].Solo -or $g[1].Count -ne 5) { throw "a MainScreenApp should get the main monitor alone" }
 $g = Get-MonitorGroups $it 1; if ($g[0].Count -ne 5) { throw "single monitor should get everything" }
 
 $t = Set-NewApps "{`n    `"New`": [`"a`"],`n    `"Gap`": 12`n}" @('a', 'b'); if ($t -notmatch '"New": \["a", "b"\],\s+"Gap": 12') { throw "New list not written: $t" }

@@ -103,10 +103,12 @@ function Get-BestLayout([double[]]$w, [int[]]$needW, [int[]]$needH, [int]$x, [in
 }
 
 # Which monitor each app goes to. $items: objects with .W, sorted most-used first; $screenCount: monitors (0 = main).
-# Main monitor gets only weight 3+ apps (or the most-used one if none); the rest spread over the other monitors by weight.
+# Main monitor gets the MainScreenApps alone if one is open, else only weight 3+ apps (or the most-used one if none); the rest spread over the other monitors by weight.
 function Get-MonitorGroups($items, [int]$screenCount) {
     $groups = @(0..($screenCount - 1) | ForEach-Object { , (New-Object System.Collections.ArrayList) })
-    $direct = @($items | Where-Object { $_.W -ge 3 }); if ($direct.Count -eq 0) { $direct = @($items[0]) }
+    $direct = @($items | Where-Object { $_.Solo })   # MainScreenApps: the main monitor is theirs alone
+    if ($direct.Count -eq 0) { $direct = @($items | Where-Object { $_.W -ge 3 }) }
+    if ($direct.Count -eq 0) { $direct = @($items[0]) }
     if ($screenCount -eq 1) { $direct = $items }
     foreach ($it in $direct) { [void]$groups[0].Add($it) }
     $load = @(0.0) * $screenCount
