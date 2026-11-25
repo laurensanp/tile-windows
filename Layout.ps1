@@ -93,7 +93,8 @@ function Get-BestLayout([double[]]$w, [int[]]$needW, [int[]]$needH, [int]$x, [in
             $score = 0.0; $ok = $true
             for ($i = 0; $i -lt $k; $i++) { $s = $slots[$i]; $sw = $s[2] - $gap; $sh = $s[3] - $gap
                 if ($sw -lt $minW -or $sh -lt $minH -or ($i -lt $needW.Count -and $needW[$i] -gt $s[2] + 1) -or ($i -lt $needH.Count -and $needH[$i] -gt $s[3] + 1)) { $ok = $false; break }
-                $score += $w[$i] * ([math]::Log($sw * $sh) + [math]::Log([math]::Min(1, $sw / $(if ($i -lt $comfortW.Count -and $comfortW[$i]) { $comfortW[$i] } else { 800 }))) + [math]::Log([math]::Min(1, $sh / $comfortH))) }
+                # Below the comfortable size counts double, so very flat or very narrow windows lose against a balanced mix.
+                $score += $w[$i] * ([math]::Log($sw * $sh) + 2 * [math]::Log([math]::Min(1.0, $sw / $(if ($i -lt $comfortW.Count -and $comfortW[$i]) { $comfortW[$i] } else { 800 }))) + 2 * [math]::Log([math]::Min(1.0, $sh / $comfortH))) }   # 1.0, not 1: Min(int,int) would round
             if ($ok -and $score -gt $bestScore) { $bestScore = $score; $best = $slots }
         }
         if ($best) { return @{ Slots = $best; Count = $k } }

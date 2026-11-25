@@ -31,6 +31,7 @@ $L = Get-L @(2, 2) @(1200, 1200) @(800, 800); if ($L.Count -ne 1) { throw "two b
 $L = Get-L @(2, 2) @() @(800, 800); if ($L.Count -ne 2 -or $L.Slots[0][1] -ne $L.Slots[1][1]) { throw "two tall apps should go side by side" }
 $L = Get-BestLayout ([double[]]@(5, 5, 4)) ([int[]]@(0, 0, 614)) @() 0 0 1896 1014 $false 12 500 300 ([int[]]@(800, 1280, 800)); Assert-Layout $L 3 "wide Brave"; if ($L.Slots[1][2] -lt 1000) { throw "a wide app should get a wide slot" }
 $L = Get-L @(2.5, 2, 2, 1.5) @(814, 812, 0, 0) @(0, 612, 0, 0); Assert-Layout $L 4 "Discord+Spotify"; if ($L.Count -lt 3) { throw "Discord, Spotify and one more should fit (Spotify stacked)" }
+$L = Get-L @(5, 5, 4.5) @(0, 0, 614); if ($L.Slots[0][0] -eq $L.Slots[1][0] -and $L.Slots[1][0] -eq $L.Slots[2][0]) { throw "three flat full-width rows should lose against a mix (comfort scoring broken?)" }
 $L = Get-L @(3, 2) @() @(800, 800) $true; if ($L.Count -ne 2 -or $L.Slots[0][0] -le $L.Slots[1][0]) { throw "mirrored layout should put the main app on the right" }
 
 $it = @(3, 3, 2, 1, 1) | ForEach-Object { [pscustomobject]@{ W = $_ } }
