@@ -77,29 +77,49 @@ function Get-ColumnSlots($cols, [double[]]$w, [int[]]$needW, [int[]]$needH, [int
 # as can be shown readably (slot >= $minW x $minH). Among those it picks the highest score: important apps get more
 # area, and slots below a comfortable size count less ($comfortW per app, ~800 or 1280 for WideApps, x $comfortH).
 # $bigRight mirrors it so the first column faces the other monitor.
-# Returns @{ Slots = per-index @(x,y,w,h); Count = how many of the first apps are shown }.
-function Get-BestLayout([double[]]$w, [int[]]$needW, [int[]]$needH, [int]$x, [int]$y, [int]$width, [int]$height, [bool]$bigRight, [int]$gap, [int]$minW, [int]$minH, [int[]]$comfortW = @(), [int]$comfortH = 600) {
+# $seed > 0: a random pick (same seed = same pick) among the layouts nearly as good as the best, also rows instead of
+# columns and mirrored ones, but not $avoid (the Sig of the layout shown last). 0 = always the best one.
+# Returns @{ Slots = per-index @(x,y,w,h); Count = how many of the first apps are shown; Sig = the layout as text }.
+function Get-BestLayout([double[]]$w, [int[]]$needW, [int[]]$needH, [int]$x, [int]$y, [int]$width, [int]$height, [bool]$bigRight, [int]$gap, [int]$minW, [int]$minH, [int[]]$comfortW = @(), [int]$comfortH = 600, [int]$seed = 0, [string]$avoid = '') {
     $maxCols = [math]::Max(1, [math]::Floor($width / ($minW + $gap))); $maxRows = [math]::Max(1, [math]::Floor($height / ($minH + $gap)))
+    $styles = @(, @($false, $bigRight))   # (rows instead of columns, mirrored)
+    if ($seed) { $styles = @(@($false, $false), @($false, $true), @($true, $false), @($true, $true)) }
     for ($k = [math]::Min($w.Count, $maxCols * $maxRows); $k -ge 1; $k--) {
-        $best = $null; $bestScore = [double]::NegativeInfinity
+        $best = $null; $bestScore = [double]::NegativeInfinity; $found = New-Object System.Collections.ArrayList
+        foreach ($style in $styles) { $rows = $style[0]
+        $nCols = if ($rows) { $maxRows } else { $maxCols }; $nRows = if ($rows) { $maxCols } else { $maxRows }
         for ($mask = 0; $mask -lt (1 -shl ($k - 1)); $mask++) {
             $cols = New-Object System.Collections.ArrayList; $cur = New-Object System.Collections.ArrayList; [void]$cur.Add(0)
             for ($i = 1; $i -lt $k; $i++) { if ($mask -band (1 -shl ($i - 1))) { [void]$cols.Add($cur.ToArray()); $cur = New-Object System.Collections.ArrayList }; [void]$cur.Add($i) }
             [void]$cols.Add($cur.ToArray())
-            if ($cols.Count -gt $maxCols) { continue }
-            $tooTall = $false; foreach ($c in $cols) { if ($c.Count -gt $maxRows) { $tooTall = $true } }; if ($tooTall) { continue }
-            $order = $cols.ToArray(); if ($bigRight) { [array]::Reverse($order) }
-            $slots = Get-ColumnSlots $order $w $needW $needH $x $y $width $height
+            if ($cols.Count -gt $nCols) { continue }
+            $tooTall = $false; foreach ($c in $cols) { if ($c.Count -gt $nRows) { $tooTall = $true } }; if ($tooTall) { continue }
+            $order = $cols.ToArray(); if ($style[1]) { [array]::Reverse($order) }
+            if ($rows) {   # same as columns with x and y swapped
+                $slots = Get-ColumnSlots $order $w $needH $needW $y $x $height $width
+                for ($i = 0; $i -lt $k; $i++) { $s = $slots[$i]; $slots[$i] = @($s[1], $s[0], $s[3], $s[2]) }
+            } else { $slots = Get-ColumnSlots $order $w $needW $needH $x $y $width $height }
             $score = 0.0; $ok = $true
             for ($i = 0; $i -lt $k; $i++) { $s = $slots[$i]; $sw = $s[2] - $gap; $sh = $s[3] - $gap
+                if ($s[2] -ge $width -and $s[3] * 2 -lt $height) { $ok = $false; break }   # no flat strip across the whole screen
                 if ($sw -lt $minW -or $sh -lt $minH -or ($i -lt $needW.Count -and $needW[$i] -gt $s[2] + 1) -or ($i -lt $needH.Count -and $needH[$i] -gt $s[3] + 1)) { $ok = $false; break }
                 # Below the comfortable size counts double, so very flat or very narrow windows lose against a balanced mix.
                 $score += $w[$i] * ([math]::Log($sw * $sh) + 2 * [math]::Log([math]::Min(1.0, $sw / $(if ($i -lt $comfortW.Count -and $comfortW[$i]) { $comfortW[$i] } else { 800 }))) + 2 * [math]::Log([math]::Min(1.0, $sh / $comfortH))) }   # 1.0, not 1: Min(int,int) would round
-            if ($ok -and $score -gt $bestScore) { $bestScore = $score; $best = $slots }
-        }
-        if ($best) { return @{ Slots = $best; Count = $k } }
+            if (-not $ok) { continue }
+            if ($score -gt $bestScore) { $bestScore = $score; $best = $slots }
+            [void]$found.Add(@{ Slots = $slots; Score = $score; Sig = (@($slots[0..($k - 1)] | ForEach-Object { $_ -join ',' }) -join ';') })
+        } }
+        if (-not $best) { continue }
+        if (-not $seed) { return @{ Slots = $best; Count = $k; Sig = '' } }
+        if ($k -eq 2) {   # two apps: only side by side (they just swap sides), unless that doesn't fit
+            $side = @($found | Where-Object { $_.Slots[0][1] -eq $_.Slots[1][1] }); if ($side.Count) { $found = $side; $bestScore = [double]::NegativeInfinity; foreach ($f in $side) { if ($f.Score -gt $bestScore) { $bestScore = $f.Score } } } }
+        $total = 0.0; for ($i = 0; $i -lt $k; $i++) { $total += $w[$i] }
+        $good = @{}; foreach ($f in $found) { if ($f.Score -ge $bestScore - 0.5 * $total -and $f.Sig -ne $avoid) { $good[$f.Sig] = $f } }   # 0.5: about 40% less area or comfort at most
+        if ($good.Count -eq 0) { foreach ($f in $found) { $good[$f.Sig] = $f } }
+        $keys = @($good.Keys | Sort-Object); $pick = $good[$keys[(New-Object Random $seed).Next($keys.Count)]]
+        return @{ Slots = $pick.Slots; Count = $k; Sig = $pick.Sig }
     }
-    $one = New-Object object[] $w.Count; $one[0] = @($x, $y, $width, $height); @{ Slots = $one; Count = 1 }
+    $one = New-Object object[] $w.Count; $one[0] = @($x, $y, $width, $height); @{ Slots = $one; Count = 1; Sig = '' }
 }
 
 # Which monitor each app goes to. $items: objects with .W, sorted most-used first; $screenCount: monitors (0 = main).

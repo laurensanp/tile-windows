@@ -36,7 +36,11 @@ if ($items.Count -eq 0) { return }
 $items = @($items | Sort-Object -Property @{ e = 'W'; Descending = $true }, @{ e = 'Z' })
 $groups = Get-MonitorGroups $items $screens.Count
 
+# Each press picks another good layout at random (columns, rows, mirrored...), never the one shown last on that monitor.
+$lastFile = Join-Path $env:TEMP 'tile-windows-last.txt'
+$last = @(if (Test-Path $lastFile) { Get-Content $lastFile }); $sigs = New-Object string[] $screens.Count
 for ($m = 0; $m -lt $screens.Count; $m++) {
+    $seed = Get-Random -Minimum 1 -Maximum ([int]::MaxValue); $avoid = if ($m -lt $last.Count) { $last[$m] } else { '' }
     $g = $groups[$m]; $a = $screens[$m].WorkingArea
     # Sizes in settings are at 100% scaling; this monitor may be scaled (e.g. 150% on a 4K laptop).
     $sc = [Tiler]::ScaleAt($a.X + $a.Width / 2, $a.Y + $a.Height / 2)
@@ -47,7 +51,8 @@ for ($m = 0; $m -lt $screens.Count; $m++) {
     for ($pass = 0; $pass -lt 8 -and $g.Count; $pass++) {
         $layout = Get-BestLayout ([double[]]@($g | ForEach-Object { $_.W })) ([int[]]@($g | ForEach-Object { $_.MinW })) ([int[]]@($g | ForEach-Object { $_.MinH })) `
             ($a.X + $h) ($a.Y + $h) ($a.Width - $gap) ($a.Height - $gap) ($a.X -lt $mainX) $gap $minW $minH `
-            ([int[]]@($g | ForEach-Object { [int]($_.ComfortW * $sc) })) $comfortH
+            ([int[]]@($g | ForEach-Object { [int]($_.ComfortW * $sc) })) $comfortH $seed $avoid
+        $sigs[$m] = $layout.Sig
         while ($g.Count -gt $layout.Count) { [Tiler]::Minimize($g[$g.Count - 1].H); $g.RemoveAt($g.Count - 1) }
         $again = $false
         for ($j = 0; $j -lt $g.Count; $j++) { $s = $layout.Slots[$j]; $it = $g[$j]
@@ -60,6 +65,7 @@ for ($m = 0; $m -lt $screens.Count; $m++) {
     }
 }
 
+Set-Content $lastFile $sigs
 [Tiler]::Refocus($focus)   # in case Windows moved focus anyway
 
 if ($tip) { while ((Get-Date) -lt $showUntil) { [System.Windows.Forms.Application]::DoEvents(); Start-Sleep -Milliseconds 100 }; $tip.Dispose() }

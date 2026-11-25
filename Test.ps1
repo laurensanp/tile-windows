@@ -34,6 +34,13 @@ $L = Get-L @(2.5, 2, 2, 1.5) @(814, 812, 0, 0) @(0, 612, 0, 0); Assert-Layout $L
 $L = Get-L @(5, 5, 4.5) @(0, 0, 614); if ($L.Slots[0][0] -eq $L.Slots[1][0] -and $L.Slots[1][0] -eq $L.Slots[2][0]) { throw "three flat full-width rows should lose against a mix (comfort scoring broken?)" }
 $L = Get-L @(3, 2) @() @(800, 800) $true; if ($L.Count -ne 2 -or $L.Slots[0][0] -le $L.Slots[1][0]) { throw "mirrored layout should put the main app on the right" }
 
+$seen = @{}; foreach ($s in 1..30) { $L = Get-BestLayout ([double[]]@(5, 4.5, 2.5)) @() @() 0 0 1896 1014 $false 12 500 300 @() 600 $s ''; Assert-Layout $L 3 "random $s"; $seen[$L.Sig] = 1 }
+if ($seen.Count -lt 3) { throw "random layouts should vary" }
+$a = Get-BestLayout ([double[]]@(5, 4.5)) @() @() 0 0 1896 1014 $false 12 500 300 @() 600 7 ''; $b = Get-BestLayout ([double[]]@(5, 4.5)) @() @() 0 0 1896 1014 $false 12 500 300 @() 600 7 $a.Sig
+if ($a.Sig -eq $b.Sig) { throw "random layout should not repeat the last one" }
+foreach ($s in 0..40) { $L = Get-BestLayout ([double[]]@(5, 4.5, 2.5, 2)) @() @() 0 0 1896 1014 $false 12 500 300 @() 600 $s ''
+    for ($i = 0; $i -lt $L.Count; $i++) { if ($L.Slots[$i][2] -ge 1896 -and $L.Slots[$i][3] * 2 -lt 1014) { throw "full-width tile less than half the screen tall (seed $s)" } } }
+foreach ($s in 1..20) { $L = Get-BestLayout ([double[]]@(5, 2)) @() @() 0 0 1896 1014 $false 12 500 300 @() 600 $s ''; if ($L.Slots[0][1] -ne $L.Slots[1][1]) { throw "two apps should always be side by side" } }
 $it = @(3, 3, 2, 1, 1) | ForEach-Object { [pscustomobject]@{ W = $_ } }
 $g = Get-MonitorGroups $it 2; if ($g[0].Count -ne 2 -or $g[1].Count -ne 3) { throw "main monitor should get only weight-3 apps" }
 $g = Get-MonitorGroups @($it[3], $it[4]) 2; if ($g[0].Count -ne 1) { throw "main monitor should get the top app when none is weight 3" }
