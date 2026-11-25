@@ -16,8 +16,8 @@
         "GameFolders": "Anything started from these folders counts as a game and is never touched. Write backslashes twice."
     },
     "New": [],
-    "Hotkey": "CTRL+ALT+SHIFT+W",
-    "RestoreHotkey": "CTRL+ALT+SHIFT+R",
+    "Hotkey": "CTRL+ALT+W",
+    "RestoreHotkey": "CTRL+ALT+R",
     "Gap": 12,
     "MinWidth": 500,
     "MinHeight": 300,

@@ -1,5 +1,5 @@
 // Tiny hotkey helper. Setup compiles it to TileWindowsHotkeys.exe and starts it with Windows.
-// Usage: TileWindowsHotkeys.exe "CTRL+ALT+SHIFT+W" "C:\...\Tile-Windows.ps1" "CTRL+ALT+SHIFT+R" "C:\...\Restore-Windows.ps1"
+// Usage: TileWindowsHotkeys.exe "CTRL+ALT+W" "C:\...\Tile-Windows.ps1" "CTRL+ALT+R" "C:\...\Restore-Windows.ps1"
 // Each pressed hotkey runs its script in a hidden PowerShell. Nothing else happens in the background.
 // (Shortcut-file hotkeys are not used: Explorer often stops reacting to them after the shortcut changes.)
 using System; using System.Diagnostics; using System.Runtime.InteropServices; using System.Threading;
@@ -10,7 +10,7 @@ static class Hotkeys {
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int MessageBox(IntPtr h, string text, string caption, uint type);
     [StructLayout(LayoutKind.Sequential)] struct MSG { public IntPtr hwnd; public uint message; public IntPtr wParam, lParam; public uint time; public int x, y; }
 
-    // "CTRL+ALT+SHIFT+W" -> modifiers and virtual key. Supports CTRL, ALT, SHIFT, WIN with a letter, digit or F1-F24.
+    // "CTRL+ALT+W" -> modifiers and virtual key. Supports CTRL, ALT, SHIFT, WIN with a letter, digit or F1-F24.
     static bool Parse(string text, out uint mods, out uint vk) {
         mods = 0x4000; vk = 0; // MOD_NOREPEAT
         foreach (string raw in text.ToUpperInvariant().Split('+')) {
@@ -30,7 +30,7 @@ static class Hotkeys {
         string problems = "";
         for (int i = 0; i + 1 < args.Length; i += 2) {
             uint mods, vk;
-            if (!Parse(args[i], out mods, out vk)) problems += "Can't read the hotkey \"" + args[i] + "\" (use e.g. CTRL+ALT+SHIFT+W).\n";
+            if (!Parse(args[i], out mods, out vk)) problems += "Can't read the hotkey \"" + args[i] + "\" (use e.g. CTRL+ALT+W).\n";
             else if (!RegisterHotKey(IntPtr.Zero, i / 2 + 1, mods, vk)) problems += args[i] + " is already used by another program.\n";
         }
         if (problems != "") { // shown on its own thread so the hotkeys that did work keep working meanwhile

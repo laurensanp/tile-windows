@@ -28,8 +28,11 @@ Remove-Item $exe -ErrorAction SilentlyContinue
 Add-Type -TypeDefinition (Get-Content (Join-Path $PSScriptRoot 'Hotkeys.cs') -Raw) -OutputAssembly $exe -OutputType WindowsApplication
 
 $shell = New-Object -ComObject WScript.Shell
+# Older versions put the hotkeys on the Start-menu shortcuts; Explorer keeps those keys taken until it restarts.
+$oldHotkeys = @("$menu\Tile Windows.lnk", "$menu\Restore Windows.lnk" | Where-Object { (Test-Path $_) -and $shell.CreateShortcut($_).Hotkey })
 function New-Shortcut($path, $target, $arguments, $icon) {
-    $s = $shell.CreateShortcut($path); $s.TargetPath = $target; $s.Arguments = $arguments; $s.WorkingDirectory = $PSScriptRoot
+    Remove-Item -LiteralPath $path -ErrorAction SilentlyContinue   # fresh file: an old one could still carry a hotkey that blocks the helper's
+    $s = $shell.CreateShortcut($path); $s.TargetPath = $target; $s.Arguments = $arguments; $s.WorkingDirectory = $PSScriptRoot; $s.Hotkey = ''
     $s.WindowStyle = 7; $s.IconLocation = "$env:SystemRoot\System32\imageres.dll,$icon"; $s.Save()
 }
 New-Shortcut "$menu\Tile Windows.lnk" $ps "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$tile`"" 174
@@ -39,4 +42,5 @@ New-Shortcut "$startup\Tile Windows Hotkeys.lnk" $exe $helperArgs 174
 Start-Process $exe $helperArgs
 
 "Hotkeys ready: $($cfg.Hotkey) arranges, $($cfg.RestoreHotkey) maximizes again."
+if ($oldHotkeys.Count) { 'One-time step after updating from an older version: sign out and back in (or restart the PC) so Windows releases the old hotkeys.' }
 "Settings: $PSScriptRoot\settings.json"
