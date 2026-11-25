@@ -23,24 +23,18 @@ Paste this into PowerShell:
 irm https://raw.githubusercontent.com/laurensanp/tile-windows/main/install.ps1 | iex
 ```
 
-It installs to `%LOCALAPPDATA%\TileWindows` and creates two Start-menu shortcuts, **Tile Windows** (Ctrl+Alt+W) and **Restore Windows** (Ctrl+Alt+R). Run the same line again to update; your `settings.json` is kept.
+It installs to `%LOCALAPPDATA%\TileWindows` and adds the hotkeys **Ctrl+Alt+W** (arrange) and **Ctrl+Alt+R** (maximize again).
 
-**Uninstall:**
-
-```powershell
-& "$env:LOCALAPPDATA\TileWindows\Setup.ps1" -Uninstall; Remove-Item "$env:LOCALAPPDATA\TileWindows" -Recurse
-```
-
-**Manual install:** download this repository (**Code → Download ZIP**, or `git clone`), put the folder somewhere permanent and run `powershell -ExecutionPolicy Bypass -File .\Setup.ps1` in it. If you move the folder later, run `Setup.ps1` again.
+Run the same line again for a menu: **Update** (keeps your settings), **Settings** (opens `settings.json`), **Uninstall**.
 
 ## Settings
 
-Edit `settings.json` (created from `settings.default.json`; the `_help` block at the top explains every entry). Changes apply on the next keypress.
+Run the install command and choose **Settings**, or edit `settings.json` directly (created from `settings.default.json`; the `_help` block at the top explains every entry). Changes apply on the next keypress.
 
 | Setting | Meaning |
 |---|---|
 | `New` | Filled in automatically with open apps that have no weight yet. Move each into a group under `Weights`. |
-| `Hotkey`, `RestoreHotkey` | Shortcut keys, e.g. `"CTRL+ALT+W"`. Run `Setup.ps1` again after changing them. |
+| `Hotkey`, `RestoreHotkey` | Shortcut keys, e.g. `"CTRL+ALT+W"`. After changing them, run the install command again and choose **Update**. |
 | `Gap` | Space between windows and to the screen edge, in px at 100% scaling. |
 | `MinWidth`, `MinHeight` | Smallest readable window, in px at 100% scaling. |
 | `Weights` | Process names (Task Manager → Details, without `.exe`) grouped by how much you use them. |
@@ -72,7 +66,7 @@ Any number works as a group, e.g. `"4.5": ["Obsidian"]`. Higher weight = more sp
 
 ## Troubleshooting
 
-- **Hotkey does nothing:** run `.\Test.ps1`. A typo in `settings.json` (missing comma, a `\` that isn't doubled) shows up there. Another program may also use the same key combination; pick another one and run `Setup.ps1` again.
+- **Hotkey does nothing:** run `& "$env:LOCALAPPDATA\TileWindows\Test.ps1"`. A typo in `settings.json` (missing comma, a `\` that isn't doubled) shows up there. Another program may also use the same key combination; pick another one in `settings.json`, then run the install command again and choose **Update**.
 - **An app is never arranged:** it may run as administrator (Windows doesn't let normal programs move those), or it has weight 0 / is in a game folder.
 - **A closed app opens in its old tiled size:** apps remember their own last size. Press Ctrl+Alt+R before closing them, or maximize them once.
 
