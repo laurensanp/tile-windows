@@ -17,16 +17,21 @@ Arranges all your open app windows across all monitors with one hotkey, sized by
 
 ## Install
 
-1. Download this repository (**Code → Download ZIP**, or `git clone`) and put the folder somewhere permanent, e.g. `Documents\TileWindows`.
-2. Run setup once:
+Paste this into PowerShell:
 
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File .\Setup.ps1
-   ```
+```powershell
+irm https://raw.githubusercontent.com/laurensanp/tile-windows/main/install.ps1 | iex
+```
 
-   This creates two Start-menu shortcuts, **Tile Windows** (Ctrl+Alt+W) and **Restore Windows** (Ctrl+Alt+R), and your own `settings.json`.
+It installs to `%LOCALAPPDATA%\TileWindows` and creates two Start-menu shortcuts, **Tile Windows** (Ctrl+Alt+W) and **Restore Windows** (Ctrl+Alt+R). Run the same line again to update; your `settings.json` is kept.
 
-If you move the folder later, run `Setup.ps1` again. To remove the shortcuts: `.\Setup.ps1 -Uninstall`, then delete the folder.
+**Uninstall:**
+
+```powershell
+& "$env:LOCALAPPDATA\TileWindows\Setup.ps1" -Uninstall; Remove-Item "$env:LOCALAPPDATA\TileWindows" -Recurse
+```
+
+**Manual install:** download this repository (**Code → Download ZIP**, or `git clone`), put the folder somewhere permanent and run `powershell -ExecutionPolicy Bypass -File .\Setup.ps1` in it. If you move the folder later, run `Setup.ps1` again.
 
 ## Settings
 
@@ -56,6 +61,7 @@ Any number works as a group, e.g. `"4.5": ["Obsidian"]`. Higher weight = more sp
 
 | File | Purpose |
 |---|---|
+| `install.ps1` | One-line install / update from GitHub |
 | `Setup.ps1` | Creates the shortcuts and your `settings.json` |
 | `Tile-Windows.ps1` | What Ctrl+Alt+W runs |
 | `Restore-Windows.ps1` | What Ctrl+Alt+R runs |
