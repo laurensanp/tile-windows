@@ -1,12 +1,12 @@
 HTTP/2 404 
-date: Thu, 26 Nov 2026 12:37:31 GMT
+date: Thu, 26 Nov 2026 12:38:51 GMT
 content-type: text/html
 server: cloudflare
 nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
 cf-cache-status: DYNAMIC
 speculation-rules: "/cdn-cgi/speculation"
-report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=vYGozqJd3OE1wIkDuXVB%2Fn5FulJGV7sxHbUH3pDHKpQganq9QWqNZQYp0veGhgFEiGo1jzF%2FwHOPdukvjbwcBKLQ1GepsrfXxiZjeqnP%2BbCJegzEEXAMwEilvZrxUPc63JcF12ZoOBy2WELZYSk%3D"}]}
-cf-ray: a608f1e6aeac2516-SJC
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=WUMYppvvgHmC5Vg2KA1GT%2F4uUWpGX342h%2FB4zkAJ%2FboOTLsjVMyTP%2B6%2Bv4I264kTK8GM0Gzu30UhCS7zqcSr9kGyeIZ0pdY5oMvv5MIf73TZObCYmglRq1s3FfWAYM9YvXF75gR4GPBUUHPm7No%3D"}]}
+cf-ray: a608f3dbdb873b57-DFW
 alt-svc: h3=":443"; ma=86400
 
 <html>
@@ -14,5 +14,5 @@ alt-svc: h3=":443"; ma=86400
 <body>
 <center><h1>404 Not Found</h1></center>
 <hr><center>nginx</center>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a608f1e6aeac2516',t:'MTc5NTY5NjY1MQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a608f1e6aeac2516',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a608f3dbdb873b57',t:'MTc5NTY5NjczMQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a608f3dbdb873b57',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

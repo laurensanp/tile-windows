@@ -1,12 +1,12 @@
 HTTP/2 200 
-date: Thu, 26 Nov 2026 12:37:39 GMT
+date: Thu, 26 Nov 2026 12:38:58 GMT
 content-type: application/octet-stream
 server: cloudflare
 nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
 content-disposition: attachment; filename=Hello.shortcut
 content-security-policy: upgrade-insecure-requests
 cf-cache-status: DYNAMIC
-report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=c8%2FUOvREuO8Xa5swHEr0UK6Nnwa9bdu2wfHmv5m2roTdywzjV4ZfLNq%2FK4fFE%2BsklE7jG1ly%2FoKddF5ZGyMZUDqGGBZ7hUNGscBb%2BwbDkQFTFl77kEBgKb1LlCGWcjHN%2BLSMU0IZVVfk2mmxkCY%3D"}]}
-cf-ray: a608f1e7fff87b83-SJC
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=bpWh6fFeDZzFkODRNTba2EaNf05hhV1Fd4D3lEcEuZ%2BeYC%2F9ZBGraMXB93OepKNxi2aEYMM2mPONfEyOvUr%2F0%2BtC57r5Uhc1TNxz1vc6DvV%2BJXcxtwDgzIL0018zkD9gPLAzOzKTJ8OmmTiCRL8%3D"}]}
+cf-ray: a608f3dd6e086b04-DFW
 alt-svc: h3=":443"; ma=86400
 
