@@ -1,0 +1,10 @@
+    "com.apple.shortcuts" =     {
+        Bundle = "file:///Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS%2026.5.simruntime/Contents/Resources/RuntimeRoot/Applications/Shortcuts.app/";
+        CFBundleDisplayName = Shortcuts;
+        CFBundleExecutable = Shortcuts;
+        CFBundleIdentifier = "com.apple.shortcuts";
+        CFBundleName = Shortcuts;
+            "group.com.apple.shortcuts" = "file:///Users/runner/Library/Developer/CoreSimulator/Devices/2A020491-3EBC-4783-8622-F8314CC00294/data/Containers/Shared/AppGroup/F1D4C6E5-F112-43CC-B344-9A6BAFDA4EF3/";
+            "group.is.workflow.my.app" = "file:///Users/runner/Library/Developer/CoreSimulator/Devices/2A020491-3EBC-4783-8622-F8314CC00294/data/Containers/Shared/AppGroup/587473B5-098F-44EA-8E8D-4393A7CBD14C/";
+            "group.is.workflow.shortcuts" = "file:///Users/runner/Library/Developer/CoreSimulator/Devices/2A020491-3EBC-4783-8622-F8314CC00294/data/Containers/Shared/AppGroup/78335778-E8A6-469B-9264-A1CC8606508E/";
+        Path = "/Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/Applications/Shortcuts.app";
