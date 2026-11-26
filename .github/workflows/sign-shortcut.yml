@@ -34,6 +34,17 @@ jobs:
           python3 ipad/make_hello.py ipad/out/hello-unsigned.shortcut
           shortcuts sign --mode anyone --input ipad/out/hello-unsigned.shortcut --output ipad/out/Hello.shortcut 2>&1 | tee ipad/out/sign-log.txt
           ls -la ipad/out
+      - name: Try HubSign (RoutineHub signing service)
+        continue-on-error: true
+        run: |
+          cd ipad/out
+          curl -sS -i https://hubsign.routinehub.services/ 2>&1 | head -40 > hubsign-root.txt || true
+          for field in shortcut file; do
+            curl -sS -o "Hello-hubsign-$field.shortcut" -D "hubsign-$field-headers.txt" \
+              -F "$field=@hello-unsigned.shortcut" -F "shortcutName=Hello" \
+              https://hubsign.routinehub.services/sign || true
+          done
+          file Hello-hubsign-* || true; head -c 300 Hello-hubsign-* || true
       - name: Commit results
         if: always()
         run: |
