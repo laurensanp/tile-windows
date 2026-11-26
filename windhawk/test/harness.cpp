@@ -383,12 +383,18 @@ static void TestLive() {
     // A second press (another layout) must not overwrite the saved state.
     PressHotkey('W');
     Sleep(1500);
+    // An app "closed to the tray" (like Discord) only hides its window: the
+    // restore hotkey must not bring it back.
+    HWND trayed = notepads[1];
+    ShowWindow(trayed, SW_HIDE);
+    Sleep(500);
     PressHotkey('R');
     Sleep(2500);
     PrintWindows(L"after Ctrl+Alt+R");
     SaveScreenshot(L"screenshots\\mod-3-restored.bmp");
+    CHECK(!IsWindowVisible(trayed), "restore keeps a hidden window hidden");
     for (const auto& [hwnd, b] : before) {
-        if (!IsWindow(hwnd)) {
+        if (!IsWindow(hwnd) || hwnd == trayed) {
             continue;
         }
         CHECK(!!IsZoomed(hwnd) == b.zoomed && !!IsIconic(hwnd) == b.iconic,

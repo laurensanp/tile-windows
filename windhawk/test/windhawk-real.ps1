@@ -110,11 +110,15 @@ if ([Tiler]::GetForegroundWindow() -ne $fg) { $failed += 'tiling moved the focus
 
 "SendInput: $([Keys]::Press('W'))"   # another layout; the saved state must stay the first one
 Start-Sleep 2
+# An app "closed to the tray" (like Discord) only hides its window: Ctrl+Alt+R must not bring it back.
+[void][Tiler]::ShowWindow($np[1], 0); Start-Sleep 1
 "SendInput: $([Keys]::Press('R'))"
 Start-Sleep 3
 Show-Windows 'after Ctrl+Alt+R'
 Save-Screen 'windhawk-3-restored'
-foreach ($w in $wins) { $b = $before[[long]$w]; $r = [Tiler]::Visible($w)
+if ([Tiler]::IsWindowVisible($np[1])) { $failed += 'Ctrl+Alt+R showed a hidden (closed to tray) window' }
+[void][Tiler]::ShowWindow($np[1], 4)   # back for the next steps
+foreach ($w in $wins) { if ($w -eq $np[1]) { continue }; $b = $before[[long]$w]; $r = [Tiler]::Visible($w)
     if ([Tiler]::IsZoomed($w) -ne $b[0] -or [Tiler]::IsIconic($w) -ne $b[1]) { $failed += "window $w not back in its old state (max=$($b[0]) min=$($b[1]))"; continue }
     if (-not $b[0] -and -not $b[1] -and ([math]::Abs($r.L - $b[2].L) -gt 2 -or [math]::Abs($r.T - $b[2].T) -gt 2 -or [math]::Abs($r.R - $b[2].R) -gt 2 -or [math]::Abs($r.B - $b[2].B) -gt 2)) {
         $failed += "window $w not back at its old position" } }
