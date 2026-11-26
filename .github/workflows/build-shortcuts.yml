@@ -40,7 +40,7 @@ jobs:
           for f in glob.glob(f"{__import__('os').environ['RUNNER_TEMP']}/debug/*.plist"):
               d = plistlib.load(open(f, 'rb'))
               for i, a in enumerate(d['WFWorkflowActions']):
-                  p = a['WFWorkflowActionParameters']
+                  p = a.get('WFWorkflowActionParameters', {})
                   if a['WFWorkflowActionIdentifier'] == 'is.workflow.actions.conditional' and p.get('WFControlFlowMode') == 0:
                       c = p.get('WFCondition')
                       has = any(k in p for k in ('WFNumberValue', 'WFConditionalActionString', 'WFAnotherNumber'))
