@@ -1,0 +1,37 @@
+name: Discover Open App window parameters
+on:
+  push:
+    branches: [ipad-shortcut]
+    paths: ['.github/workflows/discover-actions.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  discover:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Search iPadOS simulator runtime
+        run: |
+          mkdir -p ipad/discover; cd ipad/discover
+          ROOTS=$(ls -d /Library/Developer/CoreSimulator/Volumes/*/Library/Developer/CoreSimulator/Profiles/Runtimes/*.simruntime/Contents/Resources/RuntimeRoot 2>/dev/null | tail -1)
+          echo "$ROOTS" | tee root.txt
+          R="$ROOTS"
+          # Files that mention window placement words
+          grep -rIl --exclude-dir=Caches -E 'LeftThird|TopLeading|WindowLocation' "$R/System/Library/PrivateFrameworks" "$R/Applications/Shortcuts.app" 2>/dev/null | head -40 > hits-text.txt || true
+          find "$R/System/Library/PrivateFrameworks" "$R/Applications/Shortcuts.app" -type f \( -perm -111 -o -name '*.dylib' \) 2>/dev/null | while read f; do
+            if strings -a "$f" 2>/dev/null | grep -q -E 'LeftThird|leftThird|WindowLocation|windowLocation'; then echo "$f"; fi
+          done | head -40 > hits-bin.txt || true
+          cat hits-text.txt hits-bin.txt
+          for f in $(cat hits-text.txt hits-bin.txt); do echo "=== $f"; strings -a "$f" | grep -i -E 'third|leading|trailing|windowlocation|windowsize|windowplacement|WFOpenApp|openapp|fullscreen|splitscreen|WFSplit' | sort -u | head -150; done > strings.txt
+          # Any plist / json describing openapp parameters
+          grep -rIl 'is.workflow.actions.openapp' "$R/System/Library/PrivateFrameworks" 2>/dev/null | head > openapp-files.txt || true
+          for f in $(cat openapp-files.txt); do echo "=== $f"; plutil -convert xml1 -o - "$f" 2>/dev/null | python3 -c 'import sys;t=sys.stdin.read();i=t.find("is.workflow.actions.openapp");print(t[max(0,i-300):i+6000] if i>=0 else "")'; done > openapp-defs.txt
+          find "$R/System/Library/PrivateFrameworks" -name 'WFActions*' -o -name '*ActionDefinition*' 2>/dev/null | head -20 > actiondef-files.txt
+          wc -l *.txt
+      - name: Commit findings
+        if: always()
+        run: |
+          git config user.name github-actions; git config user.email github-actions@users.noreply.github.com
+          git add ipad/discover; git commit -m "Discovery results [skip ci]" || exit 0
+          git pull --rebase; git push
