@@ -1001,6 +1001,8 @@ void TileWindows(const Settings& settings) {
                 return std::find(cannotMove.begin(), cannotMove.end(),
                                  it.hwnd) != cannotMove.end();
             });
+            // They were all among the first `count`.
+            count -= cannotMove.size();
             if (!again) {
                 break;
             }
@@ -1034,6 +1036,9 @@ void RestoreWindows() {
         bool maximized = wp.showCmd == SW_SHOWMAXIMIZED;
         wp.showCmd = wp.showCmd == SW_SHOWMINIMIZED ? SW_SHOWMINNOACTIVE
                                                     : SW_SHOWNOACTIVATE;
+        SetWindowPlacement(hwnd, &wp);
+        // Again: moving to a monitor with other display scaling can change the
+        // size on the way.
         SetWindowPlacement(hwnd, &wp);
         if (maximized) {
             PostMessage(hwnd, WM_SYSCOMMAND, SC_MAXIMIZE, 0);
