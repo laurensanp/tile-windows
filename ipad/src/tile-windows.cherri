@@ -1,5 +1,8 @@
 /* Tile Windows for iPad — port of laurensanp/tile-windows.
    Tiles all visible app windows, sized by how much you use each app. */
+#include 'actions/device'
+#include 'actions/text'
+#include 'actions/documents'
 #define name Tile Windows
 #define color blue
 #define glyph twoxTwoRectangles

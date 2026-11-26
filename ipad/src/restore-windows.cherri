@@ -1,4 +1,5 @@
 /* Restore Windows for iPad — like Ctrl+Alt+R: every visible app back to full screen. */
+#include 'actions/device'
 #define name Restore Windows
 #define color blue
 #define glyph rectangle
