@@ -1,0 +1,22 @@
+/* Restore Windows for iPad — like Ctrl+Alt+R: every visible app back to full screen. */
+#define name Restore Windows
+#define color blue
+#define glyph rectangle
+
+@front = getCurrentApp()
+@frontName = getName(@front)
+@visible = getVisibleApps()
+for app in @visible {
+    @thisApp = app
+    @thisName = getName(@thisApp)
+    if @thisName != @frontName {
+        rawAction("is.workflow.actions.openapp", {
+            "WFSelectedApp": @thisApp,
+            "WFWindowingFormat": "Full Screen"
+        })
+    }
+}
+rawAction("is.workflow.actions.openapp", {
+    "WFSelectedApp": @front,
+    "WFWindowingFormat": "Full Screen"
+})

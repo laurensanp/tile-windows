@@ -1,0 +1,37 @@
+name: Build iPad shortcuts
+on:
+  push:
+    branches: [ipad-shortcut]
+    paths: ['ipad/src/**', '.github/workflows/build-shortcuts.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Cherri (Shortcuts compiler) is used only during the build, pinned to one commit, and never committed.
+      - uses: actions/checkout@v4
+        with: { repository: electrikmilk/cherri, ref: 98d5191ae121a6bcf663ed0e55495f4ee4c7a6e2, path: .cherri }
+      - uses: actions/setup-go@v5
+        with: { go-version-file: .cherri/go.mod }
+      - name: Build Cherri
+        run: cd .cherri && go build -o "$RUNNER_TEMP/cherri" .
+      - name: Compile and sign (HubSign)
+        run: |
+          mkdir -p ipad/dist
+          cd ipad/src
+          for f in tile-windows restore-windows; do
+            "$RUNNER_TEMP/cherri" "$f.cherri" --share=anyone --hubsign --debug --no-ansi -o "../dist/$f.shortcut" 2>&1 | tee "$RUNNER_TEMP/$f.log"
+          done
+          mkdir -p "$RUNNER_TEMP/debug"; mv *.plist *_processed* "$RUNNER_TEMP/debug/" 2>/dev/null || true
+          ls -la ../dist
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: build-debug, path: "${{ runner.temp }}/debug" }
+      - if: always()
+        run: |
+          git config user.name github-actions; git config user.email github-actions@users.noreply.github.com
+          git add ipad/dist/*.shortcut; git commit -m "Built shortcuts [skip ci]" || exit 0
+          git pull --rebase; git push

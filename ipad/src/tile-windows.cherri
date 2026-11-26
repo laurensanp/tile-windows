@@ -1,0 +1,122 @@
+/* Tile Windows for iPad — port of laurensanp/tile-windows.
+   Tiles all visible app windows, sized by how much you use each app. */
+#define name Tile Windows
+#define color blue
+#define glyph twoxTwoRectangles
+
+// ===== Settings (edit these two lists) =====
+// Your apps, most important first. Higher up = bigger window, opened first.
+@ranking = "Safari\nClaude\nChatGPT\nNotes\nGoodNotes 5\nNotability\nObsidian\nPages\nWord\nFiles\nMail\nMessages\nWhatsApp\nDiscord\nSpotify\nMusic\nYouTube\nSettings\nShortcuts"
+// Never tiled (games, overlays). If you're in one when you run this, you stay in it.
+@ignore = "Minecraft\nRoblox\nGenshin Impact"
+// ============================================
+
+@front = getCurrentApp()
+@frontName = getName(@front)
+@visible = getVisibleApps()
+@rankLines = splitText(@ranking, "\n")
+@rankWrapped = "\n{@ranking}\n"
+@ignoreWrapped = "\n{@ignore}\n"
+
+// Sort the visible apps by your ranking; apps not in the list go last (like weight 1 in settings.json).
+@ordered = []
+@orderedNames = []
+for rankName in @rankLines {
+    @wanted = "{rankName}"
+    for vis in @visible {
+        @visName = getName(vis)
+        if @visName == @wanted {
+            @ordered += vis
+            @orderedNames += @visName
+        }
+    }
+}
+@newApps = ""
+for vis2 in @visible {
+    @n2 = getName(vis2)
+    @probe = "\n{@n2}\n"
+    if @rankWrapped !contains @probe {
+        if @ignoreWrapped !contains @probe {
+            @ordered += vis2
+            @orderedNames += @n2
+            @newApps = "{@newApps}{@n2}, "
+        }
+    }
+}
+if @newApps != "" {
+    showNotification("Not in your list yet: {@newApps}add them to the list at the top of Tile Windows.", "Tile Windows: new apps")
+}
+
+@count = count(@ordered)
+if @count == 0 {
+    stop()
+}
+// At most 4 windows stay readable on an iPad; the least important ones are left as they are.
+if @count > 4 {
+    @count = 4
+}
+
+// Number of good layouts for this many windows.
+@layouts = 1
+if @count == 2 { @layouts = 2 }
+if @count == 3 { @layouts = 3 }
+if @count == 4 { @layouts = 2 }
+
+// Each run picks another good layout, never the one shown last.
+@lastFile = getFile("tile-windows-last.txt", false)
+@lastText = trimWhitespace("{@lastFile}")
+@variant = 0
+if @layouts > 1 {
+    @variant = randomNumber(0, @layouts - 1)
+    @variantText = "{@count}-{@variant}"
+    if @variantText == @lastText {
+        @variant = @variant + 1
+        if @variant >= @layouts { @variant = 0 }
+    }
+}
+@key = "{@count}-{@variant}"
+@saveText = text("{@key}")
+saveFile("tile-windows-last.txt", @saveText, true)
+
+// Slots in ranked order: first = most important app.
+@slotTable = {
+    "1-0": "Full Screen",
+    "2-0": "Left,Right",
+    "2-1": "Right,Left",
+    "3-0": "Left,Top Trailing,Bottom Trailing",
+    "3-1": "Right,Top Leading,Bottom Leading",
+    "3-2": "Middle Third,Left Third,Right Third",
+    "4-0": "Top Leading,Top Trailing,Bottom Leading,Bottom Trailing",
+    "4-1": "Top Trailing,Top Leading,Bottom Trailing,Bottom Leading"
+}
+@slotText = getValue(@slotTable, @key)
+@slots = splitText("{@slotText}", ",")
+
+// Place every window; the app you ran it from is placed last so it keeps focus.
+@frontSlot = ""
+for app in @ordered {
+    if RepeatIndex <= @count {
+        @thisApp = app
+        @thisName = getName(@thisApp)
+        @thisSlot = getListItem(@slots, RepeatIndex)
+        if @thisName == @frontName {
+            @frontSlot = "{@thisSlot}"
+        } else {
+            rawAction("is.workflow.actions.openapp", {
+                "WFSelectedApp": @thisApp,
+                "WFWindowingFormat": @thisSlot
+            })
+        }
+    }
+}
+if @frontSlot != "" {
+    rawAction("is.workflow.actions.openapp", {
+        "WFSelectedApp": @front,
+        "WFWindowingFormat": @frontSlot
+    })
+} else {
+    // You were in a game or an app beyond the first 4: bring it back to the front untouched.
+    rawAction("is.workflow.actions.openapp", {
+        "WFSelectedApp": @front
+    })
+}
