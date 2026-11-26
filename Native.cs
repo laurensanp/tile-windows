@@ -6,7 +6,7 @@ public struct RECT { public int L, T, R, B; }
 public static class Tiler {
     delegate bool EnumProc(IntPtr h, IntPtr p);
     [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc f, IntPtr p);
-    [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);
+    [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
     [DllImport("user32.dll")] static extern IntPtr GetWindow(IntPtr h, uint cmd);
     [DllImport("user32.dll")] static extern int GetWindowLong(IntPtr h, int i);
     [DllImport("user32.dll")] static extern int GetWindowTextLength(IntPtr h);
@@ -103,8 +103,10 @@ public static class Tiler {
     // Puts a window back as SavePlacement saw it, without activating it (a game you are in keeps focus): normal and
     // minimized windows through SetWindowPlacement, maximized ones are then maximized by the app itself (WM_SYSCOMMAND),
     // which Windows doesn't let take the focus from the foreground app.
+    // Skips closed, hidden and hung windows: SetWindowPlacement would show a hidden window (an app closed to the tray,
+    // e.g. Discord) and block until a hung one responds.
     public static void RestorePlacement(IntPtr h, string saved) {
-        if (string.IsNullOrEmpty(saved) || !IsWindow(h)) return;
+        if (string.IsNullOrEmpty(saved) || !IsWindow(h) || !IsWindowVisible(h) || IsHungAppWindow(h)) return;
         var v = Array.ConvertAll(saved.Split(','), int.Parse);
         var p = new WINDOWPLACEMENT(); p.length = Marshal.SizeOf(p);
         if (!GetWindowPlacement(h, ref p)) return;

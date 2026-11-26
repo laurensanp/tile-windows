@@ -56,14 +56,14 @@ for ($m = 0; $m -lt $screens.Count; $m++) {
     $minW = [int]($cfg.MinWidth * $sc); $minH = [int]($cfg.MinHeight * $sc); $comfortH = [int](600 * $sc)
     # Pick the best mix of columns and stacked rows; apps that don't fit readably are minimized (least important first).
     # If an app refuses to get as small as its slot, its real size is remembered and the layout is worked out again.
+    $count = 0
     for ($pass = 0; $pass -lt 8 -and $g.Count; $pass++) {
         $layout = Get-BestLayout ([double[]]@($g | ForEach-Object { $_.W })) ([int[]]@($g | ForEach-Object { $_.MinW })) ([int[]]@($g | ForEach-Object { $_.MinH })) `
             ($a.X + $h) ($a.Y + $h) ($a.Width - $gap) ($a.Height - $gap) ($a.X -lt $mainX) $gap $minW $minH `
             ([int[]]@($g | ForEach-Object { [int]($_.ComfortW * $sc) })) $comfortH $seed $avoid
-        $sigs[$m] = $layout.Sig
-        while ($g.Count -gt $layout.Count) { [Tiler]::Minimize($g[$g.Count - 1].H); $g.RemoveAt($g.Count - 1) }
+        $sigs[$m] = $layout.Sig; $count = $layout.Count
         $again = $false; $cannotMove = @()
-        for ($j = 0; $j -lt $g.Count; $j++) { $s = $layout.Slots[$j]; $it = $g[$j]
+        for ($j = 0; $j -lt $count; $j++) { $s = $layout.Slots[$j]; $it = $g[$j]
             $placed = [Tiler]::Place($it.H, $s[0] + $h, $s[1] + $h, $s[2] - $gap, $s[3] - $gap)
             if ($placed -eq [Tiler]::Placed) { continue }
             $again = $true
@@ -75,6 +75,8 @@ for ($m = 0; $m -lt $screens.Count; $m++) {
         foreach ($it in $cannotMove) { $g.Remove($it) }
         if (-not $again) { break }
     }
+    # Minimized only now that the layout is final: a slot freed by a window that can't be moved goes to the next app.
+    for ($j = $count; $j -lt $g.Count; $j++) { [Tiler]::Minimize($g[$j].H) }
 }
 
 Set-Content $lastFile $sigs
