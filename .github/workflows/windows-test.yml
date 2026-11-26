@@ -160,6 +160,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: .\windhawk\test\windhawk-real.ps1
 
+      - name: Screenshots of the Windhawk UI with the mod
+        if: always()
+        continue-on-error: true
+        run: .\windhawk\test\windhawk-ui.ps1
+
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v5
