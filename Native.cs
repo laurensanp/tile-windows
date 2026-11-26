@@ -114,6 +114,7 @@ public static class Tiler {
         bool max = v[1] == 3, min = v[1] == 2;   // SW_SHOWMAXIMIZED, SW_SHOWMINIMIZED
         p.showCmd = min ? 7 : 4;                 // SW_SHOWMINNOACTIVE, SW_SHOWNOACTIVATE
         SetWindowPlacement(h, ref p);
+        SetWindowPlacement(h, ref p);   // again: moving to a monitor with other scaling can change the size on the way
         if (max) PostMessage(h, 0x0112, new IntPtr(0xF030), IntPtr.Zero);   // WM_SYSCOMMAND, SC_MAXIMIZE
     }
 
