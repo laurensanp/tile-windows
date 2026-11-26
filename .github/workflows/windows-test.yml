@@ -33,7 +33,7 @@ jobs:
           if (-not (Test-Path .\TileWindowsHotkeys.exe)) { throw 'TileWindowsHotkeys.exe not built' }
           "built TileWindowsHotkeys.exe ($((Get-Item .\TileWindowsHotkeys.exe).Length) bytes)"
 
-      - name: Smoke test with real windows (Tile, then Restore)
+      - name: Smoke test with real windows (Tile, then undo with Restore)
         run: |
           $ErrorActionPreference = 'Stop'
           Add-Type -Path .\Native.cs
@@ -53,9 +53,14 @@ jobs:
 
           1..3 | ForEach-Object { Start-Process notepad }
           Start-Sleep 3
-          Show-Windows 'before'
+          $np = @([Tiler]::AppWindows([uint32]$PID) | Where-Object { $p = 0; [void][Tiler]::GetWindowThreadProcessId($_, [ref]$p); (Get-Process -Id $p).ProcessName -eq 'notepad' })
+          if ($np.Count -lt 3) { throw "expected 3 Notepad windows, found $($np.Count) (no desktop session?)" }
+          # One maximized, one minimized, one normal: Ctrl+Alt+R must bring back each state.
+          [void][Tiler]::ShowWindow($np[0], 3); [void][Tiler]::ShowWindow($np[2], 6); Start-Sleep 1
           $wins = @([Tiler]::AppWindows([uint32]$PID))
-          if ($wins.Count -lt 3) { throw "expected at least 3 app windows, found $($wins.Count) (no desktop session?)" }
+          $before = @{}; foreach ($w in $wins) { $before[[long]$w] = @([Tiler]::IsZoomed($w), [Tiler]::IsIconic($w), [Tiler]::Visible($w)) }
+          $fg = [Tiler]::GetForegroundWindow()
+          Show-Windows 'before'
           Save-Screen screenshots\1-before.png
 
           .\Tile-Windows.ps1
@@ -67,12 +72,21 @@ jobs:
           $rects = @($shown | ForEach-Object { [Tiler]::Visible($_) })
           for ($i = 0; $i -lt $rects.Count; $i++) { for ($j = $i + 1; $j -lt $rects.Count; $j++) { $a = $rects[$i]; $b = $rects[$j]
               if ($a.L -lt $b.R - 2 -and $b.L -lt $a.R - 2 -and $a.T -lt $b.B - 2 -and $b.T -lt $a.B - 2) { throw "tiled windows overlap" } } }
+          if ([Tiler]::GetForegroundWindow() -ne $fg) { throw "tiling moved the focus" }
+          if (-not (Test-Path "$env:TEMP\tile-windows-undo.txt")) { throw "no undo state saved" }
 
-          .\Restore-Windows.ps1
+          .\Tile-Windows.ps1   # a second press (another layout) must not overwrite the saved state
           Start-Sleep 1
+          .\Restore-Windows.ps1
+          Start-Sleep 2   # maximizing is posted to the apps
           Show-Windows 'after Restore-Windows.ps1'
           Save-Screen screenshots\3-restored.png
-          if (@($wins | Where-Object { -not [Tiler]::IsZoomed($_) }).Count) { throw "not every window was maximized again" }
+          foreach ($w in $wins) { $b = $before[[long]$w]; $r = [Tiler]::Visible($w)
+              if ([Tiler]::IsZoomed($w) -ne $b[0] -or [Tiler]::IsIconic($w) -ne $b[1]) { throw "window $w not back in its old state (max=$($b[0]) min=$($b[1]))" }
+              if (-not $b[0] -and -not $b[1] -and ([math]::Abs($r.L - $b[2].L) -gt 2 -or [math]::Abs($r.T - $b[2].T) -gt 2 -or [math]::Abs($r.R - $b[2].R) -gt 2 -or [math]::Abs($r.B - $b[2].B) -gt 2)) {
+                  throw "window $w not back at its old position" } }
+          if ([Tiler]::GetForegroundWindow() -ne $fg) { throw "restoring moved the focus" }
+          if (Test-Path "$env:TEMP\tile-windows-undo.txt") { throw "undo state not cleared" }
           'smoke test ok'
 
       - name: Upload screenshots

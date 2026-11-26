@@ -12,6 +12,7 @@ static class Hotkeys {
     [StructLayout(LayoutKind.Sequential)] struct MSG { public IntPtr hwnd; public uint message; public IntPtr wParam, lParam; public uint time; public int x, y; }
 
     // "CTRL+ALT+W" -> modifiers and virtual key. Supports CTRL, ALT, SHIFT, WIN with a letter, digit or F1-F24.
+    // A letter or digit needs at least one of CTRL, ALT, SHIFT, WIN: alone it would take that key away from every app.
     static bool Parse(string text, out uint mods, out uint vk) {
         mods = 0x4000; vk = 0; // MOD_NOREPEAT
         foreach (string raw in text.ToUpperInvariant().Split('+')) {
@@ -21,7 +22,8 @@ static class Hotkeys {
             else if (p.Length > 1 && p[0] == 'F') { int n; if (int.TryParse(p.Substring(1), out n) && n >= 1 && n <= 24) vk = (uint)(0x6F + n); else return false; }
             else return false;
         }
-        return vk != 0;
+        bool fKey = vk >= 0x70 && vk <= 0x87;
+        return vk != 0 && (fKey || (mods & 0xF) != 0);
     }
 
     static void Main(string[] args) {
@@ -29,11 +31,14 @@ static class Hotkeys {
         if (!first) return; // already running
         string ps = Environment.ExpandEnvironmentVariables(@"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe");
         string problems = "";
+        var used = new System.Collections.Generic.List<ulong>();
         for (int i = 0; i + 1 < args.Length; i += 2) {
             uint mods, vk;
             if (args[i] == "START") { Run(ps, args[i + 1], " -Startup"); continue; }
-            if (!Parse(args[i], out mods, out vk)) problems += "Can't read the hotkey \"" + args[i] + "\" (use e.g. CTRL+ALT+W).\n";
+            if (!Parse(args[i], out mods, out vk)) problems += "Can't use the hotkey \"" + args[i] + "\" (use e.g. CTRL+ALT+W: a letter or digit needs CTRL, ALT, SHIFT or WIN).\n";
+            else if (used.Contains(((ulong)mods << 32) | vk)) problems += args[i] + " is set for both hotkeys.\n";
             else if (!RegisterHotKey(IntPtr.Zero, i / 2 + 1, mods, vk)) problems += args[i] + " is already used by another program.\n";
+            else used.Add(((ulong)mods << 32) | vk);
         }
         if (problems != "") { // shown on its own thread so the hotkeys that did work keep working meanwhile
             string text = problems + "Pick another hotkey in settings.json, then run the install command again and choose Update.";

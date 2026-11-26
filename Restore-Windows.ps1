@@ -1,5 +1,6 @@
-# Undoes the tiling: maximizes every app window on the monitor it is on (minimized ones too).
-# Games and weight-0 apps stay untouched, and the window (or game) you were in keeps focus. settings.json is only read.
+# Undoes the tiling: puts every window Tile-Windows.ps1 moved back to the size, position and state (normal, maximized,
+# minimized) it had before the first Ctrl+Alt+W. Windows opened since stay as they are; games were never moved.
+# Nothing is activated, so the window (or game) you are in keeps focus. settings.json is only read.
 # -Startup (run by the hotkey helper at sign-in): apps would reopen in their old tile, so until you press the tile
 # hotkey every app window that appears (minimized ones when you open them) gets a plain default size (2/3 x 3/4 of its monitor, centered),
 # except the apps in AtSignIn: Maximized ones are maximized, Minimized ones minimized. Nothing is tiled.
@@ -27,10 +28,13 @@ if ($Startup) {
     return
 }
 
+$undoFile = Join-Path $env:TEMP 'tile-windows-undo.txt'   # written by Tile-Windows.ps1
+if (-not (Test-Path $undoFile)) { return }   # nothing tiled since the last restore
+[Tiler]::MakeDpiAware()   # the same pixels Tile-Windows.ps1 saved them in
 $focus = [Tiler]::GetForegroundWindow()
-foreach ($hwnd in [Tiler]::AppWindows([uint32]$PID)) {
-    if ((Get-AppInfo $hwnd $cfg).W -eq 0) { continue }
-    if ([Tiler]::IsIconic($hwnd)) { [void][Tiler]::ShowWindow($hwnd, 4) }        # SW_SHOWNOACTIVATE: un-minimize without focusing it
-    if (-not [Tiler]::IsZoomed($hwnd)) { [void][Tiler]::ShowWindow($hwnd, 3) }   # SW_MAXIMIZE (doesn't steal focus once visible)
+foreach ($line in Get-Content $undoFile) {
+    $k, $v = $line -split "`t", 2
+    if ($v) { [Tiler]::RestorePlacement([IntPtr][long]$k, $v) }
 }
-[Tiler]::Refocus($focus)   # maximizing focuses a window; give it back
+Remove-Item $undoFile
+[Tiler]::Refocus($focus)   # in case Windows moved focus anyway

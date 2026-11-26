@@ -32,6 +32,14 @@ if ($pending.Count) {
     $showUntil = (Get-Date).AddSeconds(8)   # keep running briefly so a click on the notification still works
 }
 if ($items.Count -eq 0) { return }
+
+# Remember how each window looked before the first tiling, so Ctrl+Alt+R (Restore-Windows.ps1) can put it back.
+# Pressing Ctrl+Alt+W again keeps what was saved first; closed windows are dropped.
+$undoFile = Join-Path $env:TEMP 'tile-windows-undo.txt'
+$undo = [ordered]@{}
+if (Test-Path $undoFile) { foreach ($line in Get-Content $undoFile) { $k, $v = $line -split "`t", 2; if ($v -and [Tiler]::IsWindow([IntPtr][long]$k)) { $undo[$k] = $v } } }
+foreach ($it in $items) { $k = [string][long]$it.H; if (-not $undo.Contains($k)) { $p = [Tiler]::SavePlacement($it.H); if ($p) { $undo[$k] = $p } } }
+Set-Content $undoFile @($undo.Keys | ForEach-Object { "$_`t$($undo[$_])" })
 # Most-used first; ties keep z-order (PS 5.1 Sort-Object isn't stable, hence Z).
 $items = @($items | Sort-Object -Property @{ e = 'W'; Descending = $true }, @{ e = 'Z' })
 $groups = Get-MonitorGroups $items $screens.Count
@@ -54,13 +62,17 @@ for ($m = 0; $m -lt $screens.Count; $m++) {
             ([int[]]@($g | ForEach-Object { [int]($_.ComfortW * $sc) })) $comfortH $seed $avoid
         $sigs[$m] = $layout.Sig
         while ($g.Count -gt $layout.Count) { [Tiler]::Minimize($g[$g.Count - 1].H); $g.RemoveAt($g.Count - 1) }
-        $again = $false
+        $again = $false; $cannotMove = @()
         for ($j = 0; $j -lt $g.Count; $j++) { $s = $layout.Slots[$j]; $it = $g[$j]
-            if ([Tiler]::Place($it.H, $s[0] + $h, $s[1] + $h, $s[2] - $gap, $s[3] - $gap)) { continue }
-            $again = $true; $v = [Tiler]::Visible($it.H)
+            $placed = [Tiler]::Place($it.H, $s[0] + $h, $s[1] + $h, $s[2] - $gap, $s[3] - $gap)
+            if ($placed -eq [Tiler]::Placed) { continue }
+            $again = $true
+            if ($placed -eq [Tiler]::CannotMove) { $cannotMove += $it; continue }   # e.g. an app running as administrator: leave it, lay out the rest again
+            $v = [Tiler]::Visible($it.H)
             if ($v.R - $v.L -gt $s[2] - $gap + 2) { $it.MinW = $v.R - $v.L + $gap }
             if ($v.B - $v.T -gt $s[3] - $gap + 2) { $it.MinH = $v.B - $v.T + $gap }
         }
+        foreach ($it in $cannotMove) { $g.Remove($it) }
         if (-not $again) { break }
     }
 }

@@ -41,6 +41,6 @@ $helperArgs = "`"$($cfg.Hotkey)`" `"$tile`" `"$($cfg.RestoreHotkey)`" `"$restore
 New-Shortcut "$startup\Tile Windows Hotkeys.lnk" $exe "$helperArgs `"START`" `"$restore`"" 174   # at sign-in also maximizes apps that reopen in their old tile
 Start-Process $exe $helperArgs
 
-"Hotkeys ready: $($cfg.Hotkey) arranges, $($cfg.RestoreHotkey) maximizes again."
+"Hotkeys ready: $($cfg.Hotkey) arranges, $($cfg.RestoreHotkey) puts the windows back."
 if ($oldHotkeys.Count) { 'One-time step after updating from an older version: sign out and back in (or restart the PC) so Windows releases the old hotkeys.' }
 "Settings: $PSScriptRoot\settings.json"
