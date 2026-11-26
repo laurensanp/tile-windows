@@ -30,10 +30,11 @@ function Find-Window {
 }
 
 # Clicks the first element whose name contains $text (cards, tabs and buttons in the web UI).
-function Click-Text($text) {
+# $minY skips matches above it (the top bar also has a "Settings" button).
+function Click-Text($text, [int]$minY = 0) {
     $win = Find-Window; if (-not $win) { Write-Host "no Windhawk window"; return $false }
     $all = $win.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
-    $hit = @($all | Where-Object { $_.Current.Name -like "*$text*" -and -not $_.Current.BoundingRectangle.IsEmpty -and $_.Current.BoundingRectangle.Width -gt 0 }) | Select-Object -First 1
+    $hit = @($all | Where-Object { $_.Current.Name -like "*$text*" -and -not $_.Current.BoundingRectangle.IsEmpty -and $_.Current.BoundingRectangle.Width -gt 0 -and $_.Current.BoundingRectangle.Y -ge $minY }) | Select-Object -First 1
     if (-not $hit) { Write-Host "no element named '$text'"; return $false }
     $r = $hit.Current.BoundingRectangle
     Write-Host "click '$($hit.Current.Name)' ($($hit.Current.ControlType.ProgrammaticName)) at $([int]($r.X + $r.Width / 2)),$([int]($r.Y + $r.Height / 2))"
@@ -60,8 +61,15 @@ $h = [IntPtr]$win.Current.NativeWindowHandle
 Start-Sleep 8   # the web UI loads after the window appears
 Save-Screen 'ui-1-home'
 
-if (Click-Text 'Tile Windows') {
-    Start-Sleep 5
+# Names the web UI exposes, to see what can be clicked.
+$names = @($win.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition) |
+    ForEach-Object { $_.Current.Name } | Where-Object { $_ } | Select-Object -Unique -First 60)
+"UI elements: $($names -join ' | ')"
+
+# The only installed mod, so the first "Details" button is the Tile Windows card.
+if (Click-Text 'Details') {
+    Start-Sleep 6
     Save-Screen 'ui-2-mod-details'
-    foreach ($tab in 'Settings', 'Einstellungen') { if (Click-Text $tab) { Start-Sleep 4; Save-Screen 'ui-3-mod-settings'; break } }
+    # The mod's own Settings tab sits below the top bar (y > 130).
+    if (Click-Text 'Settings' 130) { Start-Sleep 4; Save-Screen 'ui-3-mod-settings' }
 }
