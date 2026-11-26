@@ -1,37 +1,50 @@
 #include 'actions/device'
 #include 'actions/text'
 #include 'actions/documents'
+#include 'actions/settings'
 #define name Tile Windows
 #define color blue
 #define glyph twoxTwoRectangles
 
 // Tile Windows for iPad — port of laurensanp/tile-windows.
-// Tiles all visible app windows, sized by how much you use each app.
+// Tiles the visible app windows: symmetric layouts where possible, important apps first.
 
-// ===== Settings (edit these two lists) =====
-// Your apps, most important first. Higher up = bigger window, opened first.
+// ===== Settings =====
+// Your apps, most important first. Higher up = placed first / gets the big slot.
 @ranking = "Safari\nClaude\nChatGPT\nNotes\nGoodNotes 5\nNotability\nObsidian\nPages\nWord\nFiles\nMail\nMessages\nWhatsApp\nDiscord\nSpotify\nMusic\nYouTube\nSettings\nShortcuts"
+// Apps that need width (websites, videos, documents): never squeezed into a narrow third (like WideApps).
+@needsWidth = "Safari\nChrome\nYouTube\nPages\nWord\nNumbers\nExcel\nKeynote\nPowerPoint"
 // Never tiled (games, overlays). If you're in one when you run this, you stay in it.
 @ignore = "Minecraft\nRoblox\nGenshin Impact"
-// ============================================
+// Stage Manager opens every app in its own stage, so tiling happens in Windowed Apps mode.
+// "yes" = switch back to Stage Manager afterwards, "no" = stay in Windowed Apps.
+@backToStageManager = "yes"
+// ====================
 
 @front = getCurrentApp()
 @frontName = getName(@front)
 @visible = getVisibleApps()
+@mode = getMultitaskingMode()
+@modeText = "{@mode}"
+@wasStage = "no"
+if @modeText contains "Stage" {
+    @wasStage = "yes"
+    setWindowedMultitasking()
+}
+
 @rankLines = splitText(@ranking, "\n")
 @rankWrapped = "\n{@ranking}\n"
 @ignoreWrapped = "\n{@ignore}\n"
+@wideWrapped = "\n{@needsWidth}\n"
 
-// Sort the visible apps by your ranking; apps not in the list go last (like weight 1 in settings.json).
+// Sort the visible apps by your ranking; apps not in the list go last (like weight 1).
 @ordered = []
-@orderedNames = []
 for rankName in @rankLines {
     @wanted = "{rankName}"
     for vis in @visible {
         @visName = getName(vis)
         if @visName == @wanted {
             @ordered += vis
-            @orderedNames += @visName
         }
     }
 }
@@ -42,7 +55,6 @@ for vis2 in @visible {
     if @rankWrapped !contains @probe {
         if @ignoreWrapped !contains @probe {
             @ordered += vis2
-            @orderedNames += @n2
             @newApps = "{@newApps}{@n2}, "
         }
     }
@@ -55,16 +67,55 @@ if @newApps != "" {
 if @count == 0 {
     stop()
 }
-// At most 4 windows stay readable on an iPad; the least important ones are left as they are.
+// At most 4 windows stay readable; the least important ones are left as they are.
 if @count > 4 {
     @count = 4
 }
 
-// Number of good layouts for this many windows.
+// Three apps: equal thirds, unless one of them needs width.
+// Then that app gets a half and the other two share the other half (stacked).
+@kind = "{@count}"
+@final = []
+if @count == 3 {
+    @wideApp = ""
+    for cand in @ordered {
+        if RepeatIndex <= 3 {
+            @candName = getName(cand)
+            if @wideWrapped contains "\n{@candName}\n" {
+                if @wideApp == "" {
+                    @wideApp = @candName
+                }
+            }
+        }
+    }
+    if @wideApp == "" {
+        @kind = "3t"
+        @final = @ordered
+    } else {
+        @kind = "3h"
+        for w in @ordered {
+            @wName = getName(w)
+            if @wName == @wideApp {
+                @final += w
+            }
+        }
+        for o in @ordered {
+            @oName = getName(o)
+            if @oName != @wideApp {
+                @final += o
+            }
+        }
+    }
+} else {
+    @final = @ordered
+}
+
+// Number of good (symmetric) layouts for this case.
 @layouts = 1
-if @count == 2 { @layouts = 2 }
-if @count == 3 { @layouts = 3 }
-if @count == 4 { @layouts = 2 }
+if @kind == "2" { @layouts = 2 }
+if @kind == "3t" { @layouts = 3 }
+if @kind == "3h" { @layouts = 2 }
+if @kind == "4" { @layouts = 2 }
 
 // Each run picks another good layout, never the one shown last.
 @lastFile = rawAction("is.workflow.actions.documentpicker.open", {
@@ -76,24 +127,26 @@ if @count == 4 { @layouts = 2 }
 @variant = 0
 if @layouts > 1 {
     @variant = randomNumber(0, @layouts - 1)
-    @variantText = "{@count}-{@variant}"
+    @variantText = "{@kind}-{@variant}"
     if @variantText == @lastText {
         @variant = @variant + 1
         if @variant >= @layouts { @variant = 0 }
     }
 }
-@key = "{@count}-{@variant}"
+@key = "{@kind}-{@variant}"
 @saveText = text("{@key}")
 saveFile("tile-windows-last.txt", @saveText, true)
 
-// Slots in ranked order: first = most important app.
+// Slots in order: first = most important app (or the app that needs width).
 @slotTable = {
     "1-0": "Full Screen",
     "2-0": "Left,Right",
     "2-1": "Right,Left",
-    "3-0": "Left,Top Trailing,Bottom Trailing",
-    "3-1": "Right,Top Leading,Bottom Leading",
-    "3-2": "Middle Third,Left Third,Right Third",
+    "3t-0": "Left Third,Middle Third,Right Third",
+    "3t-1": "Middle Third,Left Third,Right Third",
+    "3t-2": "Right Third,Middle Third,Left Third",
+    "3h-0": "Left,Top Trailing,Bottom Trailing",
+    "3h-1": "Right,Top Leading,Bottom Leading",
     "4-0": "Top Leading,Top Trailing,Bottom Leading,Bottom Trailing",
     "4-1": "Top Trailing,Top Leading,Bottom Trailing,Bottom Leading"
 }
@@ -102,7 +155,7 @@ saveFile("tile-windows-last.txt", @saveText, true)
 
 // Place every window; the app you ran it from is placed last so it keeps focus.
 @frontSlot = ""
-for app in @ordered {
+for app in @final {
     if RepeatIndex <= @count {
         @thisApp = app
         @thisName = getName(@thisApp)
@@ -123,8 +176,13 @@ if @frontSlot != "" {
         "WFWindowingFormat": @frontSlot
     })
 } else {
-    // You were in a game or an app beyond the first 4: bring it back to the front untouched.
     rawAction("is.workflow.actions.openapp", {
         "WFSelectedApp": @front
     })
+}
+
+if @wasStage == "yes" {
+    if @backToStageManager == "yes" {
+        setStageManagerMultitasking()
+    }
 }
