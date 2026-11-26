@@ -106,7 +106,6 @@ static bool LayoutOk(const Layout& L, int n) {
 static Layout GetL(std::vector<double> w,
                    std::vector<int> needW = {},
                    std::vector<int> needH = {},
-                   bool bigRight = false,
                    unsigned seed = 0,
                    std::wstring avoid = L"",
                    std::vector<int> comfortW = {}) {
@@ -118,7 +117,6 @@ static Layout GetL(std::vector<double> w,
     r.y = 0;
     r.width = 1896;
     r.height = 1014;
-    r.bigRight = bigRight;
     r.gap = 12;
     r.minW = 500;
     r.minH = 300;
@@ -158,6 +156,11 @@ static void TestSettings() {
     CHECK(!ParseHotkey(L"Ctrl+Alt", &mods, &vk), "no key is an error");
     CHECK(!ParseHotkey(L"Ctrl+F25", &mods, &vk), "F25 is an error");
     CHECK(!ParseHotkey(L"Ctrl+Space", &mods, &vk), "unknown key is an error");
+    CHECK(!ParseHotkey(L"W", &mods, &vk), "a letter alone is an error");
+    CHECK(!ParseHotkey(L"7", &mods, &vk), "a digit alone is an error");
+    CHECK(ParseHotkey(L"F9", &mods, &vk) && vk == VK_F9,
+          "an F-key alone is fine");
+    CHECK(ParseHotkey(L"Shift+1", &mods, &vk) && vk == '1', "Shift+1 is fine");
 }
 
 // The layout cases of Test.ps1.
@@ -187,7 +190,7 @@ static void TestLayout() {
     L = GetL({2, 2}, {}, {800, 800});
     CHECK(L.count == 2 && L.slots[0][1] == L.slots[1][1],
           "two tall apps should go side by side");
-    L = GetL({5, 5, 4}, {0, 0, 614}, {}, false, 0, L"", {800, 1280, 800});
+    L = GetL({5, 5, 4}, {0, 0, 614}, {}, 0, L"", {800, 1280, 800});
     CHECK(LayoutOk(L, 3) && L.slots[1][2] >= 1000,
           "a wide app should get a wide slot");
     L = GetL({2.5, 2, 2, 1.5}, {814, 812, 0, 0}, {0, 612, 0, 0});
@@ -196,29 +199,26 @@ static void TestLayout() {
     L = GetL({5, 5, 4.5}, {0, 0, 614});
     CHECK(!(L.slots[0][0] == L.slots[1][0] && L.slots[1][0] == L.slots[2][0]),
           "three flat full-width rows should lose against a mix");
-    L = GetL({3, 2}, {}, {800, 800}, true);
-    CHECK(L.count == 2 && L.slots[0][0] > L.slots[1][0],
-          "mirrored layout should put the main app on the right");
 
     std::map<std::wstring, int> seen;
     for (unsigned s = 1; s <= 30; s++) {
-        L = GetL({5, 4.5, 2.5}, {}, {}, false, s);
+        L = GetL({5, 4.5, 2.5}, {}, {}, s);
         CHECK(LayoutOk(L, 3), "random layouts are readable");
         seen[L.sig] = 1;
     }
     CHECK(seen.size() >= 3, "random layouts should vary");
-    Layout a = GetL({5, 4.5}, {}, {}, false, 7);
-    Layout b = GetL({5, 4.5}, {}, {}, false, 7, a.sig);
+    Layout a = GetL({5, 4.5}, {}, {}, 7);
+    Layout b = GetL({5, 4.5}, {}, {}, 7, a.sig);
     CHECK(a.sig != b.sig, "random layout should not repeat the last one");
     for (unsigned s = 0; s <= 40; s++) {
-        L = GetL({5, 4.5, 2.5, 2}, {}, {}, false, s);
+        L = GetL({5, 4.5, 2.5, 2}, {}, {}, s);
         for (int i = 0; i < L.count; i++) {
             CHECK(!(L.slots[i][2] >= 1896 && L.slots[i][3] * 2 < 1014),
                   "no full-width tile less than half the screen tall");
         }
     }
     for (unsigned s = 1; s <= 20; s++) {
-        L = GetL({5, 2}, {}, {}, false, s);
+        L = GetL({5, 2}, {}, {}, s);
         CHECK(L.slots[0][1] == L.slots[1][1],
               "two apps should always be side by side");
     }
@@ -245,7 +245,7 @@ static void TestLayout() {
 
     // Many apps must not take forever (the splits double with each app).
     DWORD start = GetTickCount();
-    L = GetL(std::vector<double>(30, 1), {}, {}, false, 5);
+    L = GetL(std::vector<double>(30, 1), {}, {}, 5);
     CHECK(LayoutOk(L, 30), "30 apps: readable layout");
     DWORD ms = GetTickCount() - start;
     HarnessLog(L"30 apps took %u ms", ms);
@@ -318,6 +318,17 @@ static void PrintWindows(const wchar_t* what) {
     }
 }
 
+struct Before {
+    bool zoomed;
+    bool iconic;
+    RECT rect;
+};
+
+static bool Near(const RECT& a, const RECT& b) {
+    return abs(a.left - b.left) <= 2 && abs(a.top - b.top) <= 2 &&
+           abs(a.right - b.right) <= 2 && abs(a.bottom - b.bottom) <= 2;
+}
+
 static void TestLive() {
     for (int i = 0; i < 3; i++) {
         ShellExecute(nullptr, L"open", L"notepad.exe", nullptr, nullptr,
@@ -326,6 +337,20 @@ static void TestLive() {
     Sleep(3000);
     std::vector<HWND> notepads = NotepadWindows();
     CHECK(notepads.size() >= 3, "3 Notepad windows open");
+    if (notepads.size() < 3) {
+        return;
+    }
+    // One maximized, one minimized, one normal: the restore hotkey must bring
+    // back each state.
+    ShowWindow(notepads[0], SW_MAXIMIZE);
+    ShowWindow(notepads[2], SW_MINIMIZE);
+    Sleep(1000);
+    std::map<HWND, Before> before;
+    for (HWND hwnd : GetAppWindows()) {
+        before[hwnd] = {!!IsZoomed(hwnd), !!IsIconic(hwnd),
+                        GetVisibleRect(hwnd)};
+    }
+    HWND fg = GetForegroundWindow();
     PrintWindows(L"before");
     SaveScreenshot(L"screenshots\\mod-1-before.bmp");
 
@@ -353,14 +378,28 @@ static void TestLive() {
                   "tiled windows don't overlap");
         }
     }
+    CHECK(GetForegroundWindow() == fg, "tiling keeps the focus");
 
+    // A second press (another layout) must not overwrite the saved state.
+    PressHotkey('W');
+    Sleep(1500);
     PressHotkey('R');
-    Sleep(2000);
+    Sleep(2500);
     PrintWindows(L"after Ctrl+Alt+R");
     SaveScreenshot(L"screenshots\\mod-3-restored.bmp");
-    for (HWND hwnd : NotepadWindows()) {
-        CHECK(IsZoomed(hwnd), "every Notepad maximized again");
+    for (const auto& [hwnd, b] : before) {
+        if (!IsWindow(hwnd)) {
+            continue;
+        }
+        CHECK(!!IsZoomed(hwnd) == b.zoomed && !!IsIconic(hwnd) == b.iconic,
+              "window back in its old state (normal, maximized, minimized)");
+        if (!b.zoomed && !b.iconic) {
+            CHECK(Near(GetVisibleRect(hwnd), b.rect),
+                  "window back at its old position");
+        }
     }
+    CHECK(GetForegroundWindow() == fg, "restoring keeps the focus");
+    CHECK(g_undo.empty(), "undo state cleared");
 
     // A changed hotkey takes effect without restarting.
     g_testSettings[L"tileHotkey"] = L"Ctrl+Alt+T";
@@ -396,6 +435,8 @@ int wmain(int argc, wchar_t** argv) {
         }
     }
     HarnessLog(L"%zu settings read", g_testSettings.size());
+    // Like the tool process Windhawk starts (its manifest declares this).
+    SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
     if (wcscmp(argv[2], L"layout") == 0) {
         TestSettings();

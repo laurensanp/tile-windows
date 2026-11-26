@@ -124,7 +124,7 @@ jobs:
           # Windhawk builds every mod for x86 too, where Win32 callbacks must be stdcall.
           foreach ($cxx in 'x86_64-w64-mingw32-clang++', 'i686-w64-mingw32-clang++') {
               "== $cxx"
-              & $cxx -std=c++23 -DUNICODE -D_UNICODE -DWINVER=0x0A00 -D_WIN32_WINNT=0x0A00 -Wall -Werror -Wno-cast-function-type-mismatch -Wno-unknown-warning-option -fsyntax-only -include test/windhawk_api_stub.h tile-windows.wh.cpp
+              & $cxx -std=c++23 -DUNICODE -D_UNICODE -DWINVER=0x0A00 -D_WIN32_WINNT=0x0A00 -Wall -Werror -Wno-cast-function-type-mismatch -Wno-unknown-warning-option -fsyntax-only -I test/stub -include test/windhawk_api_stub.h tile-windows.wh.cpp
               if ($LASTEXITCODE) { throw "mod does not compile with $cxx" }
           }
 
@@ -134,7 +134,7 @@ jobs:
           python -m pip install --quiet pyyaml
           python settings_defaults.py ..\tile-windows.wh.cpp settings.txt
           if ($LASTEXITCODE) { throw "settings block does not parse" }
-          clang++ -std=c++23 -municode -DUNICODE -D_UNICODE -O2 harness.cpp -o harness.exe -ldwmapi -lshell32 -lgdi32 -static
+          clang++ -std=c++23 -municode -DUNICODE -D_UNICODE -DWINVER=0x0A00 -D_WIN32_WINNT=0x0A00 -O2 -I stub harness.cpp -o harness.exe -ldwmapi -lshell32 -lgdi32 -static
           if ($LASTEXITCODE) { throw "harness does not compile" }
 
       - name: Layout and settings tests (same cases as Test.ps1)
