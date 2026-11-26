@@ -1,0 +1,49 @@
+name: Test shortcuts in iPad simulator
+on:
+  push:
+    branches: [ipad-shortcut]
+    paths: ['.github/workflows/sim-test.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  sim:
+    runs-on: macos-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Boot iPad simulator
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin)["devices"]; print([x["udid"] for k,v in sorted(d.items(), reverse=True) for x in v if "iPad Pro" in x["name"]][0])')
+          echo "UDID=$UDID" >> $GITHUB_ENV
+          xcrun simctl boot "$UDID"; open -a Simulator; xcrun simctl bootstatus "$UDID" -b; sleep 25
+          mkdir -p ipad/sim
+      - name: Import the three shortcuts
+        run: |
+          shot() { xcrun simctl io "$UDID" screenshot "ipad/sim/$1.png" >/dev/null 2>&1; }
+          base="https://raw.githubusercontent.com/laurensanp/tile-windows/ipad-shortcut/ipad/dist"
+          n=0
+          for name in "Tile Windows" "Restore Windows" "Most Used Apps"; do
+            n=$((n+1))
+            url=$(python3 -c 'import sys,urllib.parse as u; print(u.quote(sys.argv[1]+"/"+u.quote(sys.argv[2])+".shortcut", safe=""))' "$base" "$name")
+            xcrun simctl openurl "$UDID" "shortcuts://import-shortcut?url=$url&name=$(python3 -c 'import sys,urllib.parse as u;print(u.quote(sys.argv[1]))' "$name")"
+            sleep 10; shot "$n-a-import-sheet"
+            osascript -e 'tell application "Simulator" to activate' -e 'delay 1' -e 'tell application "System Events" to keystroke return' || echo "osascript failed" >> ipad/sim/log.txt
+            sleep 4; shot "$n-b-after-return"
+          done
+      - name: Open some apps, then run Tile Windows
+        run: |
+          shot() { xcrun simctl io "$UDID" screenshot "ipad/sim/$1.png" >/dev/null 2>&1; }
+          for app in com.apple.Preferences com.apple.DocumentsApp com.apple.mobilesafari; do xcrun simctl launch "$UDID" $app || true; sleep 4; done
+          shot "4-apps-open"
+          xcrun simctl openurl "$UDID" "shortcuts://run-shortcut?name=Tile%20Windows"
+          for i in 1 2 3; do sleep 6; shot "5-tile-run-$i"; done
+          xcrun simctl openurl "$UDID" "shortcuts://run-shortcut?name=Restore%20Windows"
+          sleep 12; shot "6-restore"
+          xcrun simctl openurl "$UDID" "shortcuts://run-shortcut?name=Most%20Used%20Apps"
+          for i in 1 2; do sleep 8; shot "7-most-used-$i"; done
+      - if: always()
+        run: |
+          git config user.name github-actions; git config user.email github-actions@users.noreply.github.com
+          git add ipad/sim; git commit -m "Simulator test screenshots [skip ci]" || exit 0
+          git pull --rebase; git push
