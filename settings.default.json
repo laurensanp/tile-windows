@@ -1,8 +1,8 @@
 {
     "_help": {
         "New": "Filled in automatically: open apps that have no weight yet. Move each name into a group under Weights.",
-        "Hotkey": "Shortcut that arranges the windows. After changing it, run the install command again and choose Update.",
-        "RestoreHotkey": "Shortcut that maximizes all apps again. After changing it, run the install command again and choose Update.",
+        "Hotkey": "Shortcut that arranges the windows, e.g. CTRL+ALT+W (a letter or digit needs CTRL, ALT, SHIFT or WIN; F1-F24 also work alone). After changing it, run the install command again and choose Update.",
+        "RestoreHotkey": "Shortcut that puts every window back as it was before tiling. After changing it, run the install command again and choose Update.",
         "Gap": "Space in px between windows and to the screen edge (at 100% display scaling; scaled automatically).",
         "MinWidth": "Narrowest allowed window in px (at 100% scaling). If apps don't fit, the least important one is minimized.",
         "MinHeight": "Lowest allowed window in px (at 100% scaling). Same rule as MinWidth.",

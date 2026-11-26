@@ -1,12 +1,13 @@
 # Tile Windows
 
-Arranges all your open app windows across all monitors with one hotkey, sized by how much you use each app. Press **Ctrl+Alt+W** to arrange, **Ctrl+Alt+R** to maximize everything again. Only a tiny hotkey helper (about 5 MB) runs in the background; after you sign in, apps open at a normal default size (centered, not tiled) until you press Ctrl+Alt+W; otherwise it does nothing until you press a hotkey.
+Arranges all your open app windows across all monitors with one hotkey, sized by how much you use each app. Press **Ctrl+Alt+W** to arrange, **Ctrl+Alt+R** to put every window back where it was before. Only a tiny hotkey helper (about 5 MB) runs in the background; after you sign in, apps open at a normal default size (centered, not tiled) until you press Ctrl+Alt+W; otherwise it does nothing until you press a hotkey.
 
 - **Main monitor** gets only the apps you work in directly (editor, browser…). Chat, music and tools go to the other monitors.
 - **Best fit, not a fixed grid:** each monitor gets the mix of side-by-side columns and stacked rows that gives important apps the most room while every window stays readable.
 - **Never unreadable:** windows don't get smaller than 500×300 (scaled with your display scaling). If too many apps are open, the least important ones are minimized.
 - **Respects apps' own minimum sizes** (Discord, Steam, Spotify can't get very small) and works them into the layout.
-- **Games are left alone** and **keep focus**: pressing the hotkey while in a game doesn't pull you out of it.
+- **Games are left alone** and **keep focus**: pressing either hotkey while in a game doesn't pull you out of it.
+- **Real undo:** Ctrl+Alt+R puts each window back exactly as it was before the first Ctrl+Alt+W (size, position, maximized or minimized). Pressing Ctrl+Alt+W several times to try layouts doesn't lose that.
 - **Reminds you about new apps:** apps it doesn't know yet are listed in `settings.json` with a notification, so you can give them a weight.
 - Works with any number of monitors, resolutions and mixed display scaling.
 
@@ -23,7 +24,7 @@ Paste this into PowerShell:
 irm https://raw.githubusercontent.com/laurensanp/tile-windows/main/install.ps1 | iex
 ```
 
-It installs to `%LOCALAPPDATA%\TileWindows` and adds the hotkeys **Ctrl+Alt+W** (arrange) and **Ctrl+Alt+R** (maximize again).
+It installs to `%LOCALAPPDATA%\TileWindows` and adds the hotkeys **Ctrl+Alt+W** (arrange) and **Ctrl+Alt+R** (undo: windows back to their size, position and state from before).
 
 Run the same line again for a menu: **Update** (keeps your settings), **Settings** (opens `settings.json`), **Uninstall**.
 

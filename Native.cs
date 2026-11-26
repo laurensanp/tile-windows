@@ -15,7 +15,10 @@ public static class Tiler {
     [DllImport("dwmapi.dll")] static extern int DwmGetWindowAttribute(IntPtr h, int a, out int v, int s);
     [DllImport("dwmapi.dll")] static extern int DwmGetWindowAttribute(IntPtr h, int a, out RECT v, int s);
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int c);
-    [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr a, int x, int y, int w, int hh, uint f);
+    [DllImport("user32.dll", SetLastError = true)] public static extern bool SetWindowPos(IntPtr h, IntPtr a, int x, int y, int w, int hh, uint f);
+    [DllImport("user32.dll")] static extern bool IsHungAppWindow(IntPtr h);
+    [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr h);
+    [DllImport("user32.dll")] static extern bool PostMessage(IntPtr h, uint msg, IntPtr w, IntPtr l);
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
     [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr h);
     [DllImport("user32.dll")] public static extern bool IsZoomed(IntPtr h);
@@ -42,7 +45,8 @@ public static class Tiler {
         return 1.0;
     }
 
-    // Real app windows only: visible, unowned, titled, resizable, not tool windows, not cloaked (hidden UWP/other desktops).
+    // Real app windows only: visible, unowned, titled, resizable, not tool windows, not cloaked (hidden UWP/other desktops),
+    // not hung (moving a hung window blocks until it responds).
     public static List<IntPtr> AppWindows(uint skipPid) {
         var list = new List<IntPtr>();
         EnumWindows((h, p) => {
@@ -53,24 +57,28 @@ public static class Tiler {
             var cls = new StringBuilder(256); GetClassName(h, cls, 256);
             if (cls.ToString() == "Progman" || cls.ToString() == "WorkerW") return true;
             uint pid; GetWindowThreadProcessId(h, out pid); if (pid == skipPid) return true;
+            if (IsHungAppWindow(h)) return true;
             list.Add(h); return true;
         }, IntPtr.Zero);
         return list;
     }
 
     // Place so the *visible* frame fills the slot (Win11 adds invisible resize borders around most windows).
-    // Returns false when the window refused to shrink to the slot (app minimum size, e.g. Steam).
+    // Returns Placed, TooBig when the window refused to shrink to the slot (app minimum size, e.g. Steam), or
+    // CannotMove when Windows doesn't let us move it (an app running as administrator).
     // Never activates the window, so a game or app you are in keeps focus (and a fullscreen game stays fullscreen).
-    public static bool Place(IntPtr h, int x, int y, int w, int hh) {
+    public const int Placed = 0, TooBig = 1, CannotMove = 2;
+    public static int Place(IntPtr h, int x, int y, int w, int hh) {
         if (IsIconic(h) || IsZoomed(h)) ShowWindow(h, 4); // SW_SHOWNOACTIVATE: back to normal size without focusing it
-        SetWindowPos(h, IntPtr.Zero, x, y, w, hh, 0x54);   // SWP_NOZORDER | SWP_NOACTIVATE | SWP_SHOWWINDOW
+        if (!SetWindowPos(h, IntPtr.Zero, x, y, w, hh, 0x54) && Marshal.GetLastWin32Error() == 5) return CannotMove; // SWP_NOZORDER | SWP_NOACTIVATE | SWP_SHOWWINDOW; 5 = access denied
+
         if (IsZoomed(h)) { ShowWindow(h, 4); SetWindowPos(h, IntPtr.Zero, x, y, w, hh, 0x54); } // some apps (e.g. FilmCraft) stay flagged maximized: broken title bar
         RECT win, vis; GetWindowRect(h, out win);
-        if (DwmGetWindowAttribute(h, 9, out vis, 16) != 0) return true;
+        if (DwmGetWindowAttribute(h, 9, out vis, 16) != 0) return Placed;
         int l = vis.L - win.L, t = vis.T - win.T, r = win.R - vis.R, b = win.B - vis.B;
         if (l != 0 || t != 0 || r != 0 || b != 0) SetWindowPos(h, IntPtr.Zero, x - l, y - t, w + l + r, hh + t + b, 0x54);
         DwmGetWindowAttribute(h, 9, out vis, 16);
-        return vis.R - vis.L <= w + 2 && vis.B - vis.T <= hh + 2;
+        return vis.R - vis.L <= w + 2 && vis.B - vis.T <= hh + 2 ? Placed : TooBig;
     }
 
     public static void Minimize(IntPtr h) { ShowWindow(h, 7); } // SW_SHOWMINNOACTIVE: minimize without focusing another window
@@ -85,11 +93,32 @@ public static class Tiler {
         SetWindowPlacement(h, ref p);
     }
 
-    // Gives focus back to h if something else took it. SW_SHOW activates without changing size (SetForegroundWindow
-    // alone is often refused for background processes).
+    // Size, position and state (normal, maximized, minimized) of a window as text, to put it back later (Ctrl+Alt+R).
+    public static string SavePlacement(IntPtr h) {
+        var p = new WINDOWPLACEMENT(); p.length = Marshal.SizeOf(p);
+        if (!GetWindowPlacement(h, ref p)) return null;
+        return string.Join(",", p.flags, p.showCmd, p.normal.L, p.normal.T, p.normal.R, p.normal.B);
+    }
+
+    // Puts a window back as SavePlacement saw it, without activating it (a game you are in keeps focus): normal and
+    // minimized windows through SetWindowPlacement, maximized ones are then maximized by the app itself (WM_SYSCOMMAND),
+    // which Windows doesn't let take the focus from the foreground app.
+    public static void RestorePlacement(IntPtr h, string saved) {
+        if (string.IsNullOrEmpty(saved) || !IsWindow(h)) return;
+        var v = Array.ConvertAll(saved.Split(','), int.Parse);
+        var p = new WINDOWPLACEMENT(); p.length = Marshal.SizeOf(p);
+        if (!GetWindowPlacement(h, ref p)) return;
+        p.flags = v[0]; p.normal.L = v[2]; p.normal.T = v[3]; p.normal.R = v[4]; p.normal.B = v[5];
+        bool max = v[1] == 3, min = v[1] == 2;   // SW_SHOWMAXIMIZED, SW_SHOWMINIMIZED
+        p.showCmd = min ? 7 : 4;                 // SW_SHOWMINNOACTIVE, SW_SHOWNOACTIVATE
+        SetWindowPlacement(h, ref p);
+        if (max) PostMessage(h, 0x0112, new IntPtr(0xF030), IntPtr.Zero);   // WM_SYSCOMMAND, SC_MAXIMIZE
+    }
+
+    // Gives focus back to h if something else took it.
     public static void Refocus(IntPtr h) {
         if (h == IntPtr.Zero || GetForegroundWindow() == h) return;
-        if (!SetForegroundWindow(h)) ShowWindow(h, 5);
+        SetForegroundWindow(h);
     }
 
     public static RECT Visible(IntPtr h) { RECT v; DwmGetWindowAttribute(h, 9, out v, 16); return v; }
