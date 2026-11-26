@@ -81,11 +81,13 @@ if @count > 4 {
 }
 
 // Tiers are sorted high to low, so "different" means the first app is more important.
-@t1 = "{getListItem(@tiers, 1)}"
+@tier1 = getListItem(@tiers, 1)
+@t1 = "{@tier1}"
 @t2 = ""
-@t3 = ""
-if @count >= 2 { @t2 = "{getListItem(@tiers, 2)}" }
-if @count >= 3 { @t3 = "{getListItem(@tiers, 3)}" }
+if @count >= 2 {
+    @tier2 = getListItem(@tiers, 2)
+    @t2 = "{@tier2}"
+}
 
 // Two apps of different weight: the important one gets 2/3 (Split Screen), done.
 if @count == 2 {
