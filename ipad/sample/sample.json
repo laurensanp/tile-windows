@@ -1,0 +1,47 @@
+{
+ "WFWorkflowMinimumClientVersionString": "900",
+ "WFWorkflowMinimumClientVersion": 900,
+ "WFWorkflowIcon": {
+  "WFWorkflowIconStartColor": 4282601983,
+  "WFWorkflowIconGlyphNumber": 59511
+ },
+ "WFWorkflowClientVersion": "4711",
+ "WFWorkflowActions": [
+  {
+   "WFWorkflowActionIdentifier": "is.workflow.actions.openapp",
+   "WFWorkflowActionParameters": {
+    "WFWindowingFormat": "Left",
+    "WFSelectedApp": {
+     "BundleIdentifier": "com.anthropic.claude",
+     "Name": "Claude",
+     "TeamIdentifier": "Q6L2SF6YDW"
+    },
+    "UUID": "7A6B3541-A229-4F4D-90A5-63F4AFCD899A",
+    "WFAppIdentifier": "com.anthropic.claude"
+   }
+  },
+  {
+   "WFWorkflowActionIdentifier": "is.workflow.actions.openapp",
+   "WFWorkflowActionParameters": {
+    "WFWindowingFormat": "Top Leading",
+    "WFSelectedApp": {
+     "BundleIdentifier": "com.openai.chat",
+     "Name": "ChatGPT",
+     "TeamIdentifier": "2DC432GLL2"
+    },
+    "UUID": "81A15E48-21E1-414E-913E-7EB9A9AA959A",
+    "WFAppIdentifier": "com.openai.chat"
+   }
+  }
+ ],
+ "WFWorkflowOutputContentItemClasses": [],
+ "WFWorkflowHasOutputFallback": false,
+ "WFWorkflowInputContentItemClasses": [],
+ "WFWorkflowTypes": [
+  "Watch",
+  "WFWorkflowTypeShowInSearch"
+ ],
+ "WFWorkflowImportQuestions": [],
+ "WFQuickActionSurfaces": [],
+ "WFWorkflowHasShortcutInputVariables": false
+}
