@@ -32,6 +32,23 @@ jobs:
           done
           mkdir -p "$RUNNER_TEMP/debug"; mv *.plist *_processed* "$RUNNER_TEMP/debug/" 2>/dev/null || true
           ls -la ../dist; test -f "../dist/Tile Windows.shortcut" && test -f "../dist/Restore Windows.shortcut"
+      - name: Check every If has a value
+        run: |
+          python3 - <<'PY'
+          import plistlib, glob, sys
+          bad = 0
+          for f in glob.glob(f"{__import__('os').environ['RUNNER_TEMP']}/debug/*.plist"):
+              d = plistlib.load(open(f, 'rb'))
+              for i, a in enumerate(d['WFWorkflowActions']):
+                  p = a['WFWorkflowActionParameters']
+                  if a['WFWorkflowActionIdentifier'] == 'is.workflow.actions.conditional' and p.get('WFControlFlowMode') == 0:
+                      c = p.get('WFCondition')
+                      has = any(k in p for k in ('WFNumberValue', 'WFConditionalActionString', 'WFAnotherNumber'))
+                      print(f"{f.split('/')[-1]} #{i} cond={c} keys={sorted(k for k in p if k.startswith('WF'))}")
+                      if c not in (100, 101) and not has:
+                          bad += 1; print('   ^^^ MISSING VALUE')
+          sys.exit(1 if bad else 0)
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: build-debug, path: "${{ runner.temp }}/debug" }
