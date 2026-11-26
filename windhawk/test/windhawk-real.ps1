@@ -41,13 +41,16 @@ function Get-Notepads { @([Tiler]::AppWindows([uint32]$PID) | Where-Object { $p 
 # --- 1. Download the newest Windhawk release (prereleases included) ---
 '=== releases ==='
 gh release list --repo ramensoftware/windhawk --limit 8
-$rel = gh release list --repo ramensoftware/windhawk --limit 8 --json tagName,isPrerelease,publishedAt | ConvertFrom-Json | Sort-Object publishedAt -Descending | Select-Object -First 1
+# (PS 5.1 passes a JSON array on as one object: assign it first, then it is enumerated)
+$all = gh release list --repo ramensoftware/windhawk --limit 8 --json tagName,isPrerelease,publishedAt | ConvertFrom-Json
+$rel = $all | Sort-Object publishedAt -Descending | Select-Object -First 1
 "using $($rel.tagName) (prerelease=$($rel.isPrerelease))"
 gh release view $rel.tagName --repo ramensoftware/windhawk --json assets --jq '.assets[].name'
 $dl = Join-Path $env:RUNNER_TEMP 'windhawk-dl'; New-Item -ItemType Directory -Force $dl | Out-Null
 gh release download $rel.tagName --repo ramensoftware/windhawk --pattern '*.exe' --dir $dl --clobber
 Get-ChildItem $dl | Format-Table Name, Length -AutoSize | Out-String
 $setup = Get-ChildItem $dl -Filter '*.exe' | Sort-Object Length -Descending | Select-Object -First 1
+if (-not $setup) { throw 'no installer downloaded' }
 
 # --- 2. Silent install ---
 '=== install ==='
