@@ -7,7 +7,7 @@
 #define glyph twoxTwoRectangles
 
 // Tile Windows for iPad — port of laurensanp/tile-windows.
-// Tiles the visible app windows: symmetric layouts where possible, important apps first.
+// Tiles the visible app windows, sized by how much you use each app (ranking below).
 
 // ===== Settings =====
 // Your apps, most important first. Higher up = placed first / gets the big slot.
@@ -37,14 +37,21 @@ if @modeText contains "Stage" {
 @ignoreWrapped = "\n{@ignore}\n"
 @wideWrapped = "\n{@needsWidth}\n"
 
-// Sort the visible apps by your ranking; apps not in the list go last (like weight 1).
+// Sort the visible apps by your ranking and give each a weight tier (like Weights in settings.json):
+// places 1-4 = "3" (big), 5-12 = "2" (medium), lower or not listed = "1" (small).
 @ordered = []
+@tiers = []
 for rankName in @rankLines {
+    @rankPos = RepeatIndex
     @wanted = "{rankName}"
+    @tier = "1"
+    if @rankPos <= 12 { @tier = "2" }
+    if @rankPos <= 4 { @tier = "3" }
     for vis in @visible {
         @visName = getName(vis)
         if @visName == @wanted {
             @ordered += vis
+            @tiers += @tier
         }
     }
 }
@@ -55,6 +62,7 @@ for vis2 in @visible {
     if @rankWrapped !contains @probe {
         if @ignoreWrapped !contains @probe {
             @ordered += vis2
+            @tiers += "1"
             @newApps = "{@newApps}{@n2}, "
         }
     }
@@ -72,8 +80,35 @@ if @count > 4 {
     @count = 4
 }
 
-// Three apps: equal thirds, unless one of them needs width.
-// Then that app gets a half and the other two share the other half (stacked).
+// Tiers are sorted high to low, so "different" means the first app is more important.
+@t1 = "{getListItem(@tiers, 1)}"
+@t2 = ""
+@t3 = ""
+if @count >= 2 { @t2 = "{getListItem(@tiers, 2)}" }
+if @count >= 3 { @t3 = "{getListItem(@tiers, 3)}" }
+
+// Two apps of different weight: the important one gets 2/3 (Split Screen), done.
+if @count == 2 {
+    if @t1 != @t2 {
+        @bigApp = getListItem(@ordered, 1)
+        @smallApp = getListItem(@ordered, 2)
+        rawAction("is.workflow.actions.splitscreen", {
+            "WFPrimaryAppIdentifier": @smallApp,
+            "WFSecondaryAppIdentifier": @bigApp,
+            "WFAppRatio": "⅓ + ⅔"
+        })
+        if @wasStage == "yes" {
+            if @backToStageManager == "yes" {
+                setStageManagerMultitasking()
+            }
+        }
+        stop()
+    }
+}
+
+// Three apps: the most important gets a half and the other two stack beside it,
+// unless all three weigh about the same, then equal thirds.
+// An app that needs width never gets a narrow third; it takes the half instead.
 @kind = "{@count}"
 @final = []
 if @count == 3 {
@@ -88,20 +123,27 @@ if @count == 3 {
             }
         }
     }
-    if @wideApp == "" {
+    @halfApp = ""
+    if @t1 != @t2 {
+        @firstApp = getListItem(@ordered, 1)
+        @halfApp = getName(@firstApp)
+    } else {
+        if @wideApp != "" { @halfApp = @wideApp }
+    }
+    if @halfApp == "" {
         @kind = "3t"
         @final = @ordered
     } else {
         @kind = "3h"
         for w in @ordered {
             @wName = getName(w)
-            if @wName == @wideApp {
+            if @wName == @halfApp {
                 @final += w
             }
         }
         for o in @ordered {
             @oName = getName(o)
-            if @oName != @wideApp {
+            if @oName != @halfApp {
                 @final += o
             }
         }
@@ -110,7 +152,7 @@ if @count == 3 {
     @final = @ordered
 }
 
-// Number of good (symmetric) layouts for this case.
+// Number of good layouts for this case.
 @layouts = 1
 if @kind == "2" { @layouts = 2 }
 if @kind == "3t" { @layouts = 3 }
