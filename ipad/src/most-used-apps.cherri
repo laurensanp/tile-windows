@@ -1,0 +1,23 @@
+#include 'actions/device'
+#include 'actions/sharing'
+#include 'actions/text'
+#define name Most Used Apps
+#define color green
+#define glyph twelveSquares
+
+// Lists your most used apps this month from Screen Time, most used first,
+// and copies the list so you can paste it into the ranking in Tile Windows.
+
+@usage = getDeviceUsage("app", nil, "thisMonth")
+@names = []
+@details = []
+for entry in @usage {
+    @item = entry
+    @appName = getName(@item)
+    @names += @appName
+    @details += "{RepeatIndex}. {@item}"
+}
+@nameList = joinText(@names, "\n")
+@detailList = joinText(@details, "\n")
+setClipboard(@nameList)
+show("Most used apps this month (names copied for Tile Windows):\n\n{@detailList}")

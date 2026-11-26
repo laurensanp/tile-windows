@@ -22,7 +22,7 @@ jobs:
         run: |
           mkdir -p ipad/dist
           cd ipad/src
-          for pair in "tile-windows:Tile Windows" "restore-windows:Restore Windows"; do
+          for pair in "tile-windows:Tile Windows" "restore-windows:Restore Windows" "most-used-apps:Most Used Apps"; do
             f="${pair%%:*}"; n="${pair#*:}"
             "$RUNNER_TEMP/cherri" "$f.cherri" --skip-sign --debug --no-ansi 2>&1 | tail -5
             # Sign with HubSign (same request that signed the Hello test)
