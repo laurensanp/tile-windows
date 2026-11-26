@@ -1041,9 +1041,10 @@ DWORD WINAPI HotkeyThread(void* readyEvent) {
     MSG msg;
     // Creates the message queue before anyone posts to it.
     PeekMessage(&msg, nullptr, WM_USER, WM_USER, PM_NOREMOVE);
+    // Ready once the hotkeys work.
+    RegisterHotkeys(*GetSettings());
     SetEvent((HANDLE)readyEvent);
 
-    RegisterHotkeys(*GetSettings());
     while (GetMessage(&msg, nullptr, 0, 0) > 0) {
         if (msg.message == WM_HOTKEY && msg.wParam == kHotkeyTile) {
             TileWindows(*GetSettings());
