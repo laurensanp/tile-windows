@@ -1,0 +1,12 @@
+HTTP/2 200 
+date: Thu, 26 Nov 2026 11:58:37 GMT
+content-type: application/octet-stream
+server: cloudflare
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+content-disposition: attachment; filename=Hello.shortcut
+content-security-policy: upgrade-insecure-requests
+cf-cache-status: DYNAMIC
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=S%2BclKQ%2BLEtVCK3yAWhoSXU2L%2B5XQDzr987QakHnM2AEaDzzt5f1Y3OC2LeqSM5DZ5KgWLFf21eyJn7mtoZYJ5iHtapoBGljjFLpVJQQVzFrEnZSELwpxz7NfbzVNh7tfF%2Fo7tYjyf0Vc0DjSWMQ%3D"}]}
+cf-ray: a608b768dc64add9-IAD
+alt-svc: h3=":443"; ma=86400
+
