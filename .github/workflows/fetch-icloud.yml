@@ -1,0 +1,24 @@
+name: Fetch iCloud shortcut
+on:
+  push:
+    branches: [ipad-shortcut]
+    paths: ['.github/workflows/fetch-icloud.yml']
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          mkdir -p ipad/sample; cd ipad/sample
+          curl -sS https://www.icloud.com/shortcuts/api/records/efcdcd7f027c4711b9c29d37092585bc -o record.json
+          URL=$(python3 -c 'import json;d=json.load(open("record.json"));print(d["fields"]["shortcut"]["value"]["downloadURL"])')
+          curl -sSL "$URL" -o sample.plist
+          python3 -c 'import plistlib,json;d=plistlib.load(open("sample.plist","rb"));open("sample.json","w").write(json.dumps(d,indent=1,default=repr))'
+          head -c 3000 sample.json
+      - if: always()
+        run: |
+          git config user.name github-actions; git config user.email github-actions@users.noreply.github.com
+          git add ipad/sample; git commit -m "iCloud sample [skip ci]" || exit 0
+          git pull --rebase; git push
