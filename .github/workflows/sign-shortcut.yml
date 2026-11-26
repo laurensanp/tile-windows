@@ -1,0 +1,42 @@
+name: Sign iPad shortcut
+on:
+  push:
+    branches: [ipad-shortcut]
+    paths: ['ipad/**', '.github/workflows/sign-shortcut.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  sign:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: System info
+        run: sw_vers; which shortcuts; shortcuts help sign || true
+      - name: Find how Open App stores its parameters (window location)
+        continue-on-error: true
+        run: |
+          mkdir -p ipad/out
+          for f in $(sudo find /System/Library/PrivateFrameworks /System/Applications/Shortcuts.app -name '*.plist' -size +20k 2>/dev/null | xargs grep -l 'is.workflow.actions.openapp' 2>/dev/null | head -5); do
+            echo "== $f"
+            plutil -convert xml1 -o - "$f" | python3 -c '
+          import sys,re
+          t=sys.stdin.read()
+          i=t.find("is.workflow.actions.openapp")
+          print(t[max(0,i-200):i+8000])' > "ipad/out/openapp-$(basename "$f").txt" || true
+          done
+          sudo grep -rIl -i 'WindowLocation\|TopLeading\|LeftThird' /System/Library/PrivateFrameworks/WorkflowKit.framework /System/Library/PrivateFrameworks/ActionKit.framework 2>/dev/null | head -20 | tee ipad/out/window-hits.txt
+          for f in $(cat ipad/out/window-hits.txt); do strings "$f" | grep -i -E 'window(location|size|placement)|topleading|leftthird|middlethird' | sort -u | head -60; done > ipad/out/window-strings.txt
+          cat ipad/out/window-strings.txt
+      - name: Build and sign test shortcut
+        run: |
+          mkdir -p ipad/out
+          python3 ipad/make_hello.py ipad/out/hello-unsigned.shortcut
+          shortcuts sign --mode anyone --input ipad/out/hello-unsigned.shortcut --output ipad/out/Hello.shortcut 2>&1 | tee ipad/out/sign-log.txt
+          ls -la ipad/out
+      - name: Commit results
+        if: always()
+        run: |
+          git config user.name github-actions; git config user.email github-actions@users.noreply.github.com
+          git add ipad/out; git commit -m "Signed test shortcut + findings [skip ci]" || exit 0
+          git push
