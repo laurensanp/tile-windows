@@ -11,47 +11,9 @@
 
 // ===== Settings =====
 // Your apps, most important first. Higher up = placed first / gets the big slot.
-@ranking = "Freenotes
-TikTok
-Claude
-Safari
-Vorschau
-Chess
-WhatsApp
-YouTube
-Twitch
-Wörterbuch Linguee
-Dateien
-Word
-GitHub
-Schulmanager
-Instagram
-Goodnotes
-Classic
-Discord
-Fotos
-Rechner
-Einstellungen
-Kurzbefehle
-App Store
-Kalender
-Spotify
-Google Drive - Dateispeicher
-DeepSeek
-PowerPoint
-Cornelsen Lernen
-Nachrichten
-Reddit"
+@ranking = "Freenotes\nTikTok\nClaude\nSafari\nVorschau\nChess\nWhatsApp\nYouTube\nTwitch\nWörterbuch Linguee\nDateien\nWord\nGitHub\nSchulmanager\nInstagram\nGoodnotes\nClassic\nDiscord\nFotos\nRechner\nEinstellungen\nKurzbefehle\nApp Store\nKalender\nSpotify\nGoogle Drive - Dateispeicher\nDeepSeek\nPowerPoint\nCornelsen Lernen\nNachrichten\nReddit"
 // Apps that need width (websites, videos, documents): never squeezed into a narrow third (like WideApps).
-@needsWidth = "Safari
-YouTube
-Twitch
-Vorschau
-Word
-PowerPoint
-Goodnotes
-Freenotes
-GitHub"
+@needsWidth = "Safari\nYouTube\nTwitch\nVorschau\nWord\nPowerPoint\nGoodnotes\nFreenotes\nGitHub"
 // Never tiled (games, overlays). If you're in one when you run this, you stay in it.
 @ignore = "Minecraft\nRoblox\nGenshin Impact"
 // Stage Manager opens every app in its own stage, so tiling happens in Windowed Apps mode.
