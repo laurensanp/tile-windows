@@ -41,8 +41,9 @@ if @modeText contains "Stage" {
 // places 1-4 = "3" (big), 5-12 = "2" (medium), lower or not listed = "1" (small).
 @ordered = []
 @tiers = []
+@rankPos = 0
 for rankName in @rankLines {
-    @rankPos = RepeatIndex
+    @rankPos += 1
     @wanted = "{rankName}"
     @tier = "1"
     if @rankPos <= 12 { @tier = "2" }
@@ -115,8 +116,10 @@ if @count == 2 {
 @final = []
 if @count == 3 {
     @wideApp = ""
+    @cpos = 0
     for cand in @ordered {
-        if RepeatIndex <= 3 {
+        @cpos += 1
+        if @cpos <= 3 {
             @candName = getName(cand)
             if @wideWrapped contains "\n{@candName}\n" {
                 if @wideApp == "" {
@@ -199,11 +202,13 @@ saveFile("tile-windows-last.txt", @saveText, true)
 
 // Place every window; the app you ran it from is placed last so it keeps focus.
 @frontSlot = ""
+@pos = 0
 for app in @final {
-    if RepeatIndex <= @count {
+    @pos += 1
+    if @pos <= @count {
         @thisApp = app
         @thisName = getName(@thisApp)
-        @thisSlot = getListItem(@slots, RepeatIndex)
+        @thisSlot = getListItem(@slots, @pos)
         if @thisName == @frontName {
             @frontSlot = "{@thisSlot}"
         } else {
