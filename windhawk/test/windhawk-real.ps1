@@ -54,13 +54,15 @@ if (-not $setup) { throw 'no installer downloaded' }
 
 # --- 2. Silent install ---
 '=== install ==='
-$p = Start-Process $setup.FullName -ArgumentList '/S' -PassThru -Wait
+# /DEVTOOLS: also install the compiler, an optional part of Windhawk 2.0 (core/src/services/update.rs)
+$p = Start-Process $setup.FullName -ArgumentList '/S', '/DEVTOOLS' -PassThru -Wait
 "installer exit code $($p.ExitCode)"
 Start-Sleep 5
 foreach ($dir in "$env:ProgramFiles\Windhawk", "$env:ProgramData\Windhawk") {
     if (Test-Path $dir) { "--- $dir ---"; Get-ChildItem $dir -Recurse -Depth 2 | Where-Object { -not $_.PSIsContainer -or $_.FullName.Split('\').Count -lt 6 } | Select-Object -First 80 | ForEach-Object { $_.FullName.Substring($dir.Length) } }
     else { "$dir missing" }
 }
+'--- windhawk.ini ---'; Get-Content "$env:ProgramFiles\Windhawk\windhawk.ini"
 Get-Service *windhawk* -ErrorAction SilentlyContinue | Format-Table Name, Status -AutoSize | Out-String
 Get-Process windhawk* -ErrorAction SilentlyContinue | Format-Table Name, Id, Path -AutoSize | Out-String
 
