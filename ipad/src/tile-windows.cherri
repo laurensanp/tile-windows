@@ -67,7 +67,11 @@ if @count == 3 { @layouts = 3 }
 if @count == 4 { @layouts = 2 }
 
 // Each run picks another good layout, never the one shown last.
-@lastFile = getFile("tile-windows-last.txt", false)
+@lastFile = rawAction("is.workflow.actions.documentpicker.open", {
+    "WFGetFilePath": "tile-windows-last.txt",
+    "WFFileErrorIfNotFound": false,
+    "WFShowFilePicker": false
+})
 @lastText = trimWhitespace("{@lastFile}")
 @variant = 0
 if @layouts > 1 {

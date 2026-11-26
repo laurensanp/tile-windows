@@ -18,12 +18,15 @@ jobs:
         with: { go-version-file: .cherri/go.mod }
       - name: Build Cherri
         run: cd .cherri && go build -o "$RUNNER_TEMP/cherri" .
-      - name: Compile and sign (HubSign)
+      - name: Compile with Cherri, sign with HubSign
         run: |
           mkdir -p ipad/dist
           cd ipad/src
           for f in tile-windows restore-windows; do
-            "$RUNNER_TEMP/cherri" "$f.cherri" --share=anyone --hubsign --debug --no-ansi -o "../dist/$f.shortcut" 2>&1 | tee "$RUNNER_TEMP/$f.log"
+            "$RUNNER_TEMP/cherri" "$f.cherri" --skip-sign --debug --no-ansi -o "$RUNNER_TEMP/$f-unsigned.shortcut" 2>&1 | tee "$RUNNER_TEMP/$f.log"
+            # Sign with HubSign (same request that signed the Hello test)
+            curl -sS --fail -o "../dist/$f.shortcut" -F "shortcut=@$RUNNER_TEMP/$f-unsigned.shortcut" -F "shortcutName=$f" https://hubsign.routinehub.services/sign
+            head -c 4 "../dist/$f.shortcut" | grep -q AEA1
           done
           mkdir -p "$RUNNER_TEMP/debug"; mv *.plist *_processed* "$RUNNER_TEMP/debug/" 2>/dev/null || true
           ls -la ../dist; test -f ../dist/tile-windows.shortcut && test -f ../dist/restore-windows.shortcut
