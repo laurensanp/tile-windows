@@ -20,6 +20,8 @@ by how much you use each app. Press **Ctrl+Alt+W** to arrange, **Ctrl+Alt+R**
 to put every window back where it was. Nothing happens until you press a
 hotkey.
 
+![Five apps arranged by Tile Windows on one monitor](https://raw.githubusercontent.com/laurensanp/tile-windows/95335922cbbccc911ff82c0f7f17bb88e7aae497/windhawk/screenshot.png)
+
 * **Main monitor** gets only the apps you work in directly (weight 3 and up:
   editor, browser...). Chat, music and tools go to the other monitors.
 * **Best fit, not a fixed grid:** each monitor gets the mix of side-by-side
