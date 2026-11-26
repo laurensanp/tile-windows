@@ -1,0 +1,82 @@
+# Runs the tests on a real Windows machine (GitHub-hosted), with the built-in Windows PowerShell 5.1.
+name: Windows test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: powershell   # Windows PowerShell 5.1, like on the user's PC (not pwsh)
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Versions
+        run: |
+          $PSVersionTable | Format-Table -AutoSize | Out-String
+          [Environment]::OSVersion.VersionString
+
+      - name: Unit tests (Test.ps1)
+        run: .\Test.ps1
+
+      - name: Build Native.cs and Hotkeys.cs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Add-Type -Path .\Native.cs
+          if (-not ('Tiler' -as [type])) { throw 'Native.cs did not load' }
+          # Same call as Setup.ps1
+          Add-Type -TypeDefinition (Get-Content .\Hotkeys.cs -Raw) -OutputAssembly .\TileWindowsHotkeys.exe -OutputType WindowsApplication
+          if (-not (Test-Path .\TileWindowsHotkeys.exe)) { throw 'TileWindowsHotkeys.exe not built' }
+          "built TileWindowsHotkeys.exe ($((Get-Item .\TileWindowsHotkeys.exe).Length) bytes)"
+
+      - name: Smoke test with real windows (Tile, then Restore)
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Add-Type -Path .\Native.cs
+          Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+          function Show-Windows($what) {
+              "--- $what ---"
+              foreach ($h in [Tiler]::AppWindows([uint32]$PID)) { $p = 0; [void][Tiler]::GetWindowThreadProcessId($h, [ref]$p); $r = [Tiler]::Visible($h)
+                  '{0,-12} x={1,5} y={2,5} w={3,5} h={4,5} max={5} min={6}' -f (Get-Process -Id $p).ProcessName, $r.L, $r.T, ($r.R - $r.L), ($r.B - $r.T), [Tiler]::IsZoomed($h), [Tiler]::IsIconic($h) }
+          }
+          function Save-Screen($file) {
+              $b = [System.Windows.Forms.SystemInformation]::VirtualScreen
+              $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height; $g = [System.Drawing.Graphics]::FromImage($bmp)
+              try { $g.CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size); $bmp.Save($file) } catch { "screenshot failed: $_" } finally { $g.Dispose(); $bmp.Dispose() }
+          }
+          New-Item -ItemType Directory screenshots | Out-Null
+          [System.Windows.Forms.Screen]::AllScreens | ForEach-Object { "screen $($_.DeviceName) $($_.Bounds) primary=$($_.Primary)" }
+
+          1..3 | ForEach-Object { Start-Process notepad }
+          Start-Sleep 3
+          Show-Windows 'before'
+          $wins = @([Tiler]::AppWindows([uint32]$PID))
+          if ($wins.Count -lt 3) { throw "expected at least 3 app windows, found $($wins.Count) (no desktop session?)" }
+          Save-Screen screenshots\1-before.png
+
+          .\Tile-Windows.ps1
+          Start-Sleep 1
+          Show-Windows 'after Tile-Windows.ps1'
+          Save-Screen screenshots\2-tiled.png
+          $rects = @($wins | ForEach-Object { [Tiler]::Visible($_) } | Where-Object { $_.R -gt $_.L })
+          for ($i = 0; $i -lt $rects.Count; $i++) { for ($j = $i + 1; $j -lt $rects.Count; $j++) { $a = $rects[$i]; $b = $rects[$j]
+              if ($a.L -lt $b.R - 2 -and $b.L -lt $a.R - 2 -and $a.T -lt $b.B - 2 -and $b.T -lt $a.B - 2) { throw "tiled windows overlap" } } }
+
+          .\Restore-Windows.ps1
+          Start-Sleep 1
+          Show-Windows 'after Restore-Windows.ps1'
+          Save-Screen screenshots\3-restored.png
+          if (@($wins | Where-Object { -not [Tiler]::IsZoomed($_) }).Count) { throw "not every window was maximized again" }
+          'smoke test ok'
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: screenshots
+          if-no-files-found: ignore
