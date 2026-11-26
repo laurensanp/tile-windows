@@ -3,8 +3,3 @@ settings.json
 
 # Hotkey helper, built by Setup.ps1 from Hotkeys.cs
 TileWindowsHotkeys.exe
-
-# Windhawk mod test harness output
-windhawk/test/harness.exe
-windhawk/test/settings.txt
-windhawk/test/screenshots/
