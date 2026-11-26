@@ -642,43 +642,45 @@ std::vector<std::vector<Item>> GetMonitorGroups(const std::vector<Item>& items,
 ////////////////////////////////////////////////////////////////////////////////
 // Windows
 
+// EnumWindows callback (CALLBACK: 32-bit Windows needs stdcall, which a
+// lambda can't give).
+BOOL CALLBACK CollectAppWindow(HWND hwnd, LPARAM param) {
+    auto& list = *(std::vector<HWND>*)param;
+    if (!IsWindowVisible(hwnd) || GetWindow(hwnd, GW_OWNER) ||
+        GetWindowTextLength(hwnd) == 0) {
+        return TRUE;
+    }
+    LONG style = GetWindowLong(hwnd, GWL_STYLE);
+    LONG exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
+    if (!(style & WS_THICKFRAME) || (exStyle & WS_EX_TOOLWINDOW)) {
+        return TRUE;
+    }
+    int cloaked = 0;
+    if (SUCCEEDED(DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, &cloaked,
+                                        sizeof(cloaked))) &&
+        cloaked) {
+        return TRUE;
+    }
+    WCHAR className[256];
+    if (GetClassName(hwnd, className, ARRAYSIZE(className)) &&
+        (wcscmp(className, L"Progman") == 0 ||
+         wcscmp(className, L"WorkerW") == 0)) {
+        return TRUE;
+    }
+    DWORD pid = 0;
+    GetWindowThreadProcessId(hwnd, &pid);
+    if (pid == GetCurrentProcessId()) {
+        return TRUE;
+    }
+    list.push_back(hwnd);
+    return TRUE;
+}
+
 // Real app windows only: visible, unowned, titled, resizable, not tool
 // windows, not cloaked (hidden UWP apps, other virtual desktops). In z-order.
 std::vector<HWND> GetAppWindows() {
     std::vector<HWND> list;
-    EnumWindows(
-        [](HWND hwnd, LPARAM param) -> BOOL {
-            auto& list = *(std::vector<HWND>*)param;
-            if (!IsWindowVisible(hwnd) || GetWindow(hwnd, GW_OWNER) ||
-                GetWindowTextLength(hwnd) == 0) {
-                return TRUE;
-            }
-            LONG style = GetWindowLong(hwnd, GWL_STYLE);
-            LONG exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
-            if (!(style & WS_THICKFRAME) || (exStyle & WS_EX_TOOLWINDOW)) {
-                return TRUE;
-            }
-            int cloaked = 0;
-            if (SUCCEEDED(DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, &cloaked,
-                                                sizeof(cloaked))) &&
-                cloaked) {
-                return TRUE;
-            }
-            WCHAR className[256];
-            if (GetClassName(hwnd, className, ARRAYSIZE(className)) &&
-                (wcscmp(className, L"Progman") == 0 ||
-                 wcscmp(className, L"WorkerW") == 0)) {
-                return TRUE;
-            }
-            DWORD pid = 0;
-            GetWindowThreadProcessId(hwnd, &pid);
-            if (pid == GetCurrentProcessId()) {
-                return TRUE;
-            }
-            list.push_back(hwnd);
-            return TRUE;
-        },
-        (LPARAM)&list);
+    EnumWindows(CollectAppWindow, (LPARAM)&list);
     return list;
 }
 
@@ -819,21 +821,21 @@ struct Screen {
     bool primary;
 };
 
+// EnumDisplayMonitors callback.
+BOOL CALLBACK CollectScreen(HMONITOR monitor, HDC, LPRECT, LPARAM param) {
+    MONITORINFO mi{sizeof(mi)};
+    if (GetMonitorInfo(monitor, &mi)) {
+        ((std::vector<Screen>*)param)
+            ->push_back({monitor, mi.rcMonitor, mi.rcWork,
+                         (mi.dwFlags & MONITORINFOF_PRIMARY) != 0});
+    }
+    return TRUE;
+}
+
 // Main monitor first, then left to right.
 std::vector<Screen> GetScreens() {
     std::vector<Screen> screens;
-    EnumDisplayMonitors(
-        nullptr, nullptr,
-        [](HMONITOR monitor, HDC, LPRECT, LPARAM param) -> BOOL {
-            MONITORINFO mi{sizeof(mi)};
-            if (GetMonitorInfo(monitor, &mi)) {
-                ((std::vector<Screen>*)param)
-                    ->push_back({monitor, mi.rcMonitor, mi.rcWork,
-                                 (mi.dwFlags & MONITORINFOF_PRIMARY) != 0});
-            }
-            return TRUE;
-        },
-        (LPARAM)&screens);
+    EnumDisplayMonitors(nullptr, nullptr, CollectScreen, (LPARAM)&screens);
     std::stable_sort(screens.begin(), screens.end(),
                      [](const Screen& a, const Screen& b) {
                          if (a.primary != b.primary) {

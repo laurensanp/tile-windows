@@ -103,12 +103,16 @@ jobs:
           Add-Content $env:GITHUB_PATH $bin
           "using $($zip.Name)"
 
-      - name: Compile the mod as Windhawk does (clang, C++23)
+      - name: Compile the mod as Windhawk does (clang, C++23, 64 and 32 bit)
         working-directory: windhawk
         run: |
           clang++ --version
-          clang++ -std=c++23 -DUNICODE -D_UNICODE -DWINVER=0x0A00 -D_WIN32_WINNT=0x0A00 -Wall -Werror -Wno-cast-function-type-mismatch -Wno-unknown-warning-option -fsyntax-only -include test/windhawk_api_stub.h tile-windows.wh.cpp
-          if ($LASTEXITCODE) { throw "mod does not compile" }
+          # Windhawk builds every mod for x86 too, where Win32 callbacks must be stdcall.
+          foreach ($cxx in 'x86_64-w64-mingw32-clang++', 'i686-w64-mingw32-clang++') {
+              "== $cxx"
+              & $cxx -std=c++23 -DUNICODE -D_UNICODE -DWINVER=0x0A00 -D_WIN32_WINNT=0x0A00 -Wall -Werror -Wno-cast-function-type-mismatch -Wno-unknown-warning-option -fsyntax-only -include test/windhawk_api_stub.h tile-windows.wh.cpp
+              if ($LASTEXITCODE) { throw "mod does not compile with $cxx" }
+          }
 
       - name: Build the test harness
         working-directory: windhawk/test
