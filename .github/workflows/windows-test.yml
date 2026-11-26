@@ -142,3 +142,24 @@ jobs:
           name: mod-screenshots
           path: windhawk/test/screenshots
           if-no-files-found: ignore
+
+  windhawk-real:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Windhawk, install the mod with windhawk-cli, press the hotkeys
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: .\windhawk\test\windhawk-real.ps1
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: windhawk-screenshots
+          path: windhawk/test/screenshots-windhawk
+          if-no-files-found: ignore
