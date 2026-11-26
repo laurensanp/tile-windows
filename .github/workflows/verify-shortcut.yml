@@ -1,0 +1,35 @@
+name: Verify shortcut in iPad simulator
+on:
+  push:
+    branches: [ipad-shortcut]
+    paths: ['ipad/*.shortcut', '.github/workflows/verify-shortcut.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  verify:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Boot an iPad simulator
+        run: |
+          xcrun simctl list devices available | grep -i ipad | head
+          UDID=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin)["devices"]; print([x["udid"] for k,v in sorted(d.items(), reverse=True) for x in v if "iPad Pro" in x["name"] or "iPad Air" in x["name"]][0])')
+          echo "UDID=$UDID" >> $GITHUB_ENV
+          xcrun simctl boot "$UDID"; xcrun simctl bootstatus "$UDID" -b
+          sleep 20
+      - name: Open shortcut and take screenshots
+        run: |
+          mkdir -p ipad/screens
+          xcrun simctl listapps "$UDID" | grep -i -E 'shortcut|workflow' | tee ipad/screens/apps.txt || true
+          cd ipad && (python3 -m http.server 8765 >/dev/null 2>&1 &) && cd ..
+          sleep 2
+          xcrun simctl io "$UDID" screenshot ipad/screens/0-home.png
+          xcrun simctl openurl "$UDID" "shortcuts://import-shortcut?url=http://127.0.0.1:8765/Hello.shortcut&name=Hello" || echo "openurl failed" >> ipad/screens/apps.txt
+          for i in 1 2 3 4; do sleep 6; xcrun simctl io "$UDID" screenshot "ipad/screens/$i-import.png"; done
+      - name: Commit screenshots
+        if: always()
+        run: |
+          git config user.name github-actions; git config user.email github-actions@users.noreply.github.com
+          git add ipad/screens; git commit -m "Simulator screenshots [skip ci]" || exit 0
+          git pull --rebase; git push
