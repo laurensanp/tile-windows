@@ -73,6 +73,7 @@ for ($m = 0; $m -lt $screens.Count; $m++) {
             if ($v.B - $v.T -gt $s[3] - $gap + 2) { $it.MinH = $v.B - $v.T + $gap }
         }
         foreach ($it in $cannotMove) { $g.Remove($it) }
+        $count -= $cannotMove.Count   # they were all among the first $count
         if (-not $again) { break }
     }
     # Minimized only now that the layout is final: a slot freed by a window that can't be moved goes to the next app.
