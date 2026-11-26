@@ -24,9 +24,14 @@ jobs:
           xcrun simctl listapps "$UDID" | grep -i -E 'shortcut|workflow' | tee ipad/screens/apps.txt || true
           cd ipad && (python3 -m http.server 8765 >/dev/null 2>&1 &) && cd ..
           sleep 2
-          xcrun simctl io "$UDID" screenshot ipad/screens/0-home.png
-          xcrun simctl openurl "$UDID" "shortcuts://import-shortcut?url=http://127.0.0.1:8765/Hello.shortcut&name=Hello" || echo "openurl failed" >> ipad/screens/apps.txt
-          for i in 1 2 3 4; do sleep 6; xcrun simctl io "$UDID" screenshot "ipad/screens/$i-import.png"; done
+          rm -f ipad/screens/*.png
+          RAW="https://raw.githubusercontent.com/laurensanp/tile-windows/ipad-shortcut/ipad/Hello.shortcut"
+          ENC=$(python3 -c 'import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1], safe=""))' "$RAW")
+          xcrun simctl openurl "$UDID" "shortcuts://import-shortcut?url=$ENC&name=Hello" || echo "openurl A failed" >> ipad/screens/apps.txt
+          for i in 1 2 3; do sleep 6; xcrun simctl io "$UDID" screenshot "ipad/screens/A$i-urlscheme.png"; done
+          xcrun simctl terminate "$UDID" com.apple.shortcuts || true
+          xcrun simctl openurl "$UDID" "$RAW" || echo "openurl B failed" >> ipad/screens/apps.txt
+          for i in 1 2 3; do sleep 6; xcrun simctl io "$UDID" screenshot "ipad/screens/B$i-safari.png"; done
       - name: Commit screenshots
         if: always()
         run: |
