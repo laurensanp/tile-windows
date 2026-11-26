@@ -82,3 +82,63 @@ jobs:
           name: screenshots
           path: screenshots
           if-no-files-found: ignore
+
+  windhawk-mod:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Get clang (llvm-mingw, the compiler Windhawk uses)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          gh release download --repo mstorsjo/llvm-mingw --pattern '*-ucrt-x86_64.zip' --dir $env:RUNNER_TEMP
+          $zip = Get-ChildItem "$env:RUNNER_TEMP\*-ucrt-x86_64.zip" | Select-Object -First 1
+          Expand-Archive $zip.FullName -DestinationPath $env:RUNNER_TEMP
+          $bin = (Get-ChildItem "$env:RUNNER_TEMP\llvm-mingw-*" -Directory | Select-Object -First 1).FullName + '\bin'
+          Add-Content $env:GITHUB_PATH $bin
+          "using $($zip.Name)"
+
+      - name: Compile the mod as Windhawk does (clang, C++23)
+        working-directory: windhawk
+        run: |
+          clang++ --version
+          clang++ -std=c++23 -DUNICODE -D_UNICODE -DWINVER=0x0A00 -D_WIN32_WINNT=0x0A00 -Wall -Werror -Wno-cast-function-type-mismatch -Wno-unknown-warning-option -fsyntax-only -include test/windhawk_api_stub.h tile-windows.wh.cpp
+          if ($LASTEXITCODE) { throw "mod does not compile" }
+
+      - name: Build the test harness
+        working-directory: windhawk/test
+        run: |
+          python -m pip install --quiet pyyaml
+          python settings_defaults.py ..\tile-windows.wh.cpp settings.txt
+          if ($LASTEXITCODE) { throw "settings block does not parse" }
+          clang++ -std=c++23 -municode -DUNICODE -D_UNICODE -O2 harness.cpp -o harness.exe -ldwmapi -lshell32 -lgdi32 -static
+          if ($LASTEXITCODE) { throw "harness does not compile" }
+
+      - name: Layout and settings tests (same cases as Test.ps1)
+        working-directory: windhawk/test
+        run: |
+          .\harness.exe settings.txt layout
+          if ($LASTEXITCODE) { throw "layout tests failed" }
+
+      - name: Live test (real windows, real hotkeys)
+        working-directory: windhawk/test
+        run: |
+          .\harness.exe settings.txt live
+          $rc = $LASTEXITCODE
+          Add-Type -AssemblyName System.Drawing
+          Get-ChildItem screenshots\*.bmp -ErrorAction SilentlyContinue | ForEach-Object {
+              $img = [System.Drawing.Image]::FromFile($_.FullName); $img.Save(($_.FullName -replace '\.bmp$', '.png'), [System.Drawing.Imaging.ImageFormat]::Png); $img.Dispose(); Remove-Item $_.FullName }
+          if ($rc) { throw "live test failed" }
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: mod-screenshots
+          path: windhawk/test/screenshots
+          if-no-files-found: ignore
