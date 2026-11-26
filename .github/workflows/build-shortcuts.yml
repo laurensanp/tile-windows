@@ -22,19 +22,21 @@ jobs:
         run: |
           mkdir -p ipad/dist
           cd ipad/src
-          for f in tile-windows restore-windows; do
-            "$RUNNER_TEMP/cherri" "$f.cherri" --skip-sign --debug --no-ansi -o "$RUNNER_TEMP/$f-unsigned.shortcut" 2>&1 | tee "$RUNNER_TEMP/$f.log"
+          for pair in "tile-windows:Tile Windows" "restore-windows:Restore Windows"; do
+            f="${pair%%:*}"; n="${pair#*:}"
+            "$RUNNER_TEMP/cherri" "$f.cherri" --skip-sign --debug --no-ansi 2>&1 | tail -5
             # Sign with HubSign (same request that signed the Hello test)
-            curl -sS --fail -o "../dist/$f.shortcut" -F "shortcut=@$RUNNER_TEMP/$f-unsigned.shortcut" -F "shortcutName=$f" https://hubsign.routinehub.services/sign
-            head -c 4 "../dist/$f.shortcut" | grep -q AEA1
+            curl -sS --fail -o "../dist/$n.shortcut" -F "shortcut=@$n""_unsigned.shortcut" -F "shortcutName=$n" https://hubsign.routinehub.services/sign
+            head -c 4 "../dist/$n.shortcut" | grep -q AEA1
+            mv "$n""_unsigned.shortcut" "$RUNNER_TEMP/"
           done
           mkdir -p "$RUNNER_TEMP/debug"; mv *.plist *_processed* "$RUNNER_TEMP/debug/" 2>/dev/null || true
-          ls -la ../dist; test -f ../dist/tile-windows.shortcut && test -f ../dist/restore-windows.shortcut
+          ls -la ../dist; test -f "../dist/Tile Windows.shortcut" && test -f "../dist/Restore Windows.shortcut"
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: build-debug, path: "${{ runner.temp }}/debug" }
       - if: always()
         run: |
           git config user.name github-actions; git config user.email github-actions@users.noreply.github.com
-          git add ipad/dist/*.shortcut; git commit -m "Built shortcuts [skip ci]" || exit 0
+          git add ipad/dist; git commit -m "Built shortcuts [skip ci]" || exit 0
           git pull --rebase; git push
